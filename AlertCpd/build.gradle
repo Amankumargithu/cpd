@@ -19,7 +19,7 @@ repositories {
 dependencies {
  	compile fileTree(dir: 'jars', include: ['*.jar'])
     compile project(':QuoddCommon')
-    implementation group: 'com.sparkjava', name: 'spark-core', version: '2.9.3'
+    implementation group: 'com.sparkjava', name: 'spark-core', version: '2.9.4'
     compile group: 'mysql', name: 'mysql-connector-java', version: '8.0.28'
     compile 'com.google.code.gson:gson:2.9.0'
 	implementation group: 'com.zaxxer', name: 'HikariCP', version: '4.0.3'
