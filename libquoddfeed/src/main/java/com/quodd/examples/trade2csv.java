@@ -1,0 +1,161 @@
+/******************************************************************************
+*
+*  trade2csv.java
+*     Pump TSQ OPTrades to CSV via TSQPump
+*
+*  REVISION HISTORY:
+*     25 JUL 2017 jcs  Created (from grepTSQ).
+*
+*  (c) 2011-2017 Quodd Financial
+*******************************************************************************/
+package com.quodd.examples;
+
+import java.io.*;
+import java.util.*;
+import QuoddFeed.msg.*;
+import QuoddFeed.MD.*;
+import QuoddFeed.util.*;
+
+
+/////////////////////////////////////////////////////////////////
+//
+//               c l a s s   t r a d e 2 c s v
+//
+/////////////////////////////////////////////////////////////////
+
+public class trade2csv extends TSQPump
+{
+   //////////////////////
+   // Instance Members
+   //////////////////////
+   private PrintStream cout;
+
+   //////////////////////
+   // Constructor
+   //////////////////////
+   public trade2csv( String idxFile, String dataFile )
+   {
+      super( idxFile, dataFile );
+      cout     = System.out;
+   }
+
+
+   //////////////////////
+   // TSQPump Interface
+   //////////////////////
+   /**
+    * \brief Callback invoked when Index File is loading
+    *
+    * @param idxFile Index filename
+    */
+   public void OnIndexFileStart( String idxFile )
+   {
+      cout.printf( "[%s] INDEX file %s loading ...\n", Now(), idxFile );
+   }
+
+   /**
+    * \brief Callback invoked when Index File has been loaded
+    *
+    * @param idxFile Index filename
+    */
+   public void OnIndexFileLoaded( String idxFile )
+   {
+      cout.printf( "[%s] INDEX file %s loaded\n", Now(), idxFile );
+   }
+
+   /**
+    * \brief Callback invoked when Data File is loading
+    *
+    * @param dataFile Data filename
+    */
+   public void OnDataFileStart( String dataFile )
+   {
+      cout.printf( "[%s] DATA  file %s loading ...\n", Now(), dataFile );
+   }
+
+   /**
+    * \brief Callback invoked when Data File has been loaded
+    *
+    * @param dataFile Data filename
+    */
+   public void OnDataFileLoaded( String dataFile )
+   {
+      cout.printf( "[%s] DATA  file %s loaded\n", Now(), dataFile );
+   }
+
+
+   //////////////////////
+   // IUpdate Interface
+   //////////////////////
+   /**
+    * Called when an EQTrade update is received for an equity ticker.
+    */
+   public void OnUpdate( String StreamName, EQTrade trd )
+   {
+      cout.print( trd.Dump() );
+   }
+
+   /**
+    * Called when an OPTrade update is received for an option ticker.
+    */
+   public void OnUpdate( String StreamName, OPTrade trd )
+   {
+      String tkr = trd.tkr();
+      String tm  = trd.pTimeMs().replace("[","").replace("]","");
+
+      // Market Centers Only
+
+      if ( tkr.indexOf( '/' ) == -1 )
+         return;
+      cout.printf( "%s,%s,%d,", tm, tkr, trd.RTL() );
+      cout.printf( "%.4f,%d,", trd._bid, trd._bidSize );
+      cout.printf( "%.4f,%d,", trd._ask, trd._askSize );
+      cout.printf( "%.4f,%d,%d,", trd._trdPrc, trd._trdVol, trd._trdID );
+      cout.printf( "%.4f,%d,", trd._bid, trd._bidSize );
+      cout.printf( "%.4f,%d,", trd._ask, trd._askSize );
+      cout.printf( "\n" );
+   }
+
+
+
+   /////////////////////////
+   //
+   //  main()
+   //
+   /////////////////////////
+   public static void main( String args[] )
+   {
+      trade2csv   grep;
+      PrintStream cout = System.out;
+      int         argc;
+      String      iFile, dFile, t0, t1;
+
+      // Quick Check
+
+      argc = args.length;
+      if ( argc < 2 ) {
+         cout.printf( "Usage : trade2csv <idxFile> <dataFile>; Exitting ...\n" );
+         return;
+      }
+      if ( args[0].equals( "--version" ) ) {
+         cout.printf( "%s\n", QuoddMsg.Version() );
+         return;
+      }
+
+      // Load Config
+
+      iFile = args[0];
+      dFile = args[1];
+      t0    = "00:00";
+      t1    = "23:55";
+      grep  = new trade2csv( iFile, dFile );
+      cout.printf( "[%s] Started; %s ...", Now(), "PumpAll()-sort" );
+      grep.Start();
+      grep.PumpAll( t0, t1, false );
+      grep.Destroy();
+      cout.printf( "[%s] Done!!\n", Now() );
+
+   }
+
+} // class trade2csv
+

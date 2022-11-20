@@ -1,0 +1,23 @@
+apply plugin: 'java'
+apply plugin: 'eclipse'
+apply plugin: 'java-library-distribution'
+
+sourceCompatibility = 1.8
+version = '1.0'
+jar {
+    manifest {
+        attributes 'Implementation-Title': 'Nasdaq Basic CPD', 'Implementation-Version': 1.0
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+	compile 'com.sparkjava:spark-core:2.9.3'
+    compile 'com.google.code.gson:gson:2.9.0'
+    compile group: 'net.sourceforge.javacsv', name: 'javacsv', version: '2.0'
+    compile project(':QuoddCommon')
+    compile project(':QuoddCommonCPD')
+}

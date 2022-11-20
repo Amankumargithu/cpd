@@ -1,0 +1,99 @@
+package com.quodd.common.util;
+
+import java.io.InputStream;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Properties;
+import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import com.quodd.common.logger.CommonLogMessage;
+import com.quodd.common.logger.QuoddLogger;
+
+public class QuoddProperty {
+	private static final Logger logger = QuoddLogger.getInstance().getLogger();
+	private final Properties prop;
+	private final String name;
+
+	public QuoddProperty(final String filename) {
+		Objects.requireNonNull(filename);
+		this.name = filename;
+		this.prop = new Properties();
+		try (InputStream iputStream = getClass().getResourceAsStream(filename);) {
+			this.prop.load(iputStream);
+		} catch (Exception e) {
+			logger.log(Level.SEVERE, this.name + " Unable to load " + filename + " " + e.getMessage(), e);
+		}
+	}
+
+	public QuoddProperty(final Map<String, String> propertyMap, String propertyName) {
+		Objects.requireNonNull(propertyMap);
+		this.name = propertyName;
+		this.prop = new Properties();
+		Set<String> keySet = propertyMap.keySet();
+		for (String key : keySet) {
+			prop.setProperty(key, propertyMap.get(key));
+		}
+	}
+
+	public String getProperty(final String key) {
+		return this.prop.getProperty(key);
+	}
+
+	public Set<String> getAllProperty() {
+		return this.prop.stringPropertyNames();
+	}
+
+	public void setProperty(final String key, final String value) {
+		this.prop.setProperty(key, value);
+	}
+
+	public String getStringProperty(final String key, final String defaultVal) {
+		String value = getProperty(key);
+		if (value == null) {
+			logger.warning(() -> this.name + " " + CommonLogMessage.missingProperty(key));
+			value = defaultVal;
+			logger.info(() -> this.name + " " + CommonLogMessage.defaultSetting(key, defaultVal));
+		}
+		return value;
+	}
+
+	public int getIntProperty(final String key, final int defaultVal) {
+		int value;
+		try {
+			value = Integer.parseInt(getProperty(key));
+		} catch (Exception e) {
+			logger.log(Level.WARNING, this.name + " " + CommonLogMessage.missingProperty(key), e);
+			value = defaultVal;
+			logger.info(this.name + " " + CommonLogMessage.defaultSetting(key, Integer.toString(value)));
+		}
+		return value;
+	}
+
+	public long getLongProperty(final String key, final long defaultVal) {
+		long value;
+		try {
+			value = Long.parseLong(getProperty(key));
+		} catch (Exception e) {
+			logger.log(Level.WARNING, this.name + " " + CommonLogMessage.missingProperty(key), e);
+			value = defaultVal;
+			logger.info(this.name + " " + CommonLogMessage.defaultSetting(key, Long.toString(value)));
+		}
+		return value;
+	}
+
+	public boolean getBooleanProperty(final String key, final boolean defaultVal) {
+		boolean value;
+		final String valueStr = getProperty(key);
+		if (valueStr == null) {
+			logger.warning(() -> this.name + " " + CommonLogMessage.missingProperty(key));
+			value = defaultVal;
+			logger.info(() -> this.name + " " + CommonLogMessage.defaultSetting(key, Boolean.toString(value)));
+		} else {
+			value = Boolean.parseBoolean(valueStr);
+		}
+		return value;
+	}
+
+}

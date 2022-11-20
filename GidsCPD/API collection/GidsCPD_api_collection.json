@@ -1,0 +1,228 @@
+{
+	"info": {
+		"_postman_id": "3a761e94-1d4a-4cc0-9181-39d3d72287cc",
+		"name": "cpds Copy",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "gidscpd",
+			"item": [
+				{
+					"name": "Stat",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{domain}}/gidscpd/stat",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"gidscpd",
+								"stat"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Snap List",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\"I:XDS\":[\"726\"]}"
+						},
+						"url": {
+							"raw": "{{domain}}/gidscpd/snap/list",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"gidscpd",
+								"snap",
+								"list"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "unsubscribe ticker",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{domain}}/gidscpd/unsubscribe?ticker=I:DJI",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"gidscpd",
+								"unsubscribe"
+							],
+							"query": [
+								{
+									"key": "ticker",
+									"value": "I:DJI"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "List root",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{domain}}/gidscpd/list/root",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"gidscpd",
+								"list",
+								"root"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "List image",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{domain}}/gidscpd/list/image",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"gidscpd",
+								"list",
+								"image"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "subscribe ticker",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{domain}}/gidscpd/subscribe?ticker=I:DJI",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"gidscpd",
+								"subscribe"
+							],
+							"query": [
+								{
+									"key": "ticker",
+									"value": "I:DJI"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "List pending",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{domain}}/gidscpd/list/pending",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"gidscpd",
+								"list",
+								"pending"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Snap",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{domain}}/gidscpd/snap?ticker=I:KIX&dataType=326",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"gidscpd",
+								"snap"
+							],
+							"query": [
+								{
+									"key": "ticker",
+									"value": "I:KIX"
+								},
+								{
+									"key": "dataType",
+									"value": "326"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Snap Dump",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{domain}}/gidscpd/snap/dump/326",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"gidscpd",
+								"snap",
+								"dump",
+								"326"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "List meta",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{domain}}/gidscpd/list/meta/726",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"gidscpd",
+								"list",
+								"meta",
+								"726"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}

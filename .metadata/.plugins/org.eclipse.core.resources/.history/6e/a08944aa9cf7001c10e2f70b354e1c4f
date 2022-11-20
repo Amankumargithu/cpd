@@ -1,0 +1,85 @@
+/******************************************************************************
+*
+*  TopOfBookQ.java
+*    Top of QuoddFeed.MD.Level2 book(s) using queue's
+*
+*  REVISION HISTORY:
+*     21 FEB 2012 jcs  Created.
+*     28 JUN 2012 jcs  Build 27: UCconfig
+*
+*  (c) 2011-2012, Quodd Financial
+*******************************************************************************/
+package examples;
+
+import java.lang.*;
+import java.util.*;
+import QuoddFeed.util.*;
+
+public class TopOfBookQ extends QuoddFeed.MD.Level2
+{
+   //////////////////////
+   // Constructor
+   //////////////////////
+   public TopOfBookQ( UltraChan uChan, 
+                      String    tkr, 
+                      boolean   bLvl2Only )
+   {
+      super( uChan, tkr, 45, 0.0, bLvl2Only );
+   }
+
+   //////////////////////
+   // Level2 Interface
+   //////////////////////
+   public void OnLevel2()
+   {
+      double  b, a;
+      long    tid;
+      String  fmt;
+
+      b   = BestBid();
+      a   = BestAsk();
+      fmt = "[%02d,%04d,%04d] %-4s %7.2f x %7.2f\n";
+      tid = Thread.currentThread().getId();
+      System.out.printf( fmt, tid, qLeft(), qMax(), _tkr, b, a );
+   }
+
+   /////////////////////////
+   //
+   //  main()
+   //
+   /////////////////////////
+   public static void main( String args[] )
+   {
+      UltraChan    uChan;
+      TopOfBookQ[] top;
+      Scanner      sc;
+      String       tkr;
+      String[]     tkrs;
+      boolean      bLvl2Only;
+      int          i, n, argc;
+
+      argc      = args.length;
+      tkr       = ( argc > 0 ) ? args[0] : "DELL";
+      tkrs      = tkr.split(",");
+      bLvl2Only = ( argc > 1 ) ? args[1].equals( "LEVEL2_ONLY" ) : true;
+      uChan = new UltraChan( UCconfig.Hostname(),
+                             UCconfig.Port(),
+                             "username",
+                             "password",
+                             false );
+      uChan.Start();
+      n   = tkrs.length;
+      top = new TopOfBookQ[n];
+      for ( i=0; i<n; i++ ) {
+         top[i] = new TopOfBookQ( uChan, tkrs[i], bLvl2Only );
+         top[i].StartQ( 1000 );
+      }
+      System.out.printf( "Hit <ENTER> to terminate...\n" );
+      sc = new Scanner( System.in );
+      sc.nextLine();
+      System.out.printf( "Shutting down ...\n" );
+      uChan.Stop();
+      for ( i=0; i<n; top[i++].StopQ() );
+      System.out.printf( "Done!!\n" );
+   }
+}

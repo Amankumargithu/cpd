@@ -1,0 +1,147 @@
+<project name="B4UTrade EJB Build Script" default="ejb-jar" basedir=".">
+    
+    <property name="basedir"           value="."/>    
+    <property name="build.ejb.dir"     value="../../../../../ant/ejb-build"/>
+    <property name="build.classes.dir" value="../../../../../ant/ejb-build/classes"/>
+    <property name="ejb.dist.dir"      value="../../../../../ant/dist"/>
+	<property name="jars.dir"           value="../../../../jars" />
+    
+	<path id="classpath">
+		<fileset dir="${jars.dir}">
+			<include name="*.jar" />
+		</fileset>
+	</path>
+
+     
+    <target name="compile_options">
+      <delete dir="${build.ejb.dir}"/>
+      <delete dir="${build.classes.dir}"/>
+      <mkdir dir="${build.ejb.dir}"/>
+      <mkdir dir="${build.classes.dir}"/>
+      <javac srcdir="${basedir}/../../../"
+           destdir="${build.classes.dir}"
+           includes="com/b4utrade/ejb/Option**"
+           debug="on"
+           deprecation="on"
+           optimize="off"
+      >
+       <classpath path="${classpath}" />       
+      </javac>
+    </target>
+	
+    
+
+    <target name="options" depends="compile_options">
+        <mkdir dir="${build.ejb.dir}/META-INF"/>
+        <jar jarfile="${build.ejb.dir}/ejbOptionsAll.jar">
+            <fileset dir="${build.classes.dir}">
+                <include name="com/b4utrade/ejb/**" />
+            </fileset>
+            <fileset dir="${build.ejb.dir}">
+                <include name="META-INF/ejb-jar.xml" />
+                <include name="META-INF/jboss.xml" />
+            </fileset>
+        </jar>
+        <copy todir="${ejb.dist.dir}">
+          <fileset dir="${build.ejb.dir}" includes="**/*.jar"/>
+        </copy>
+    </target>
+	
+
+	<target name="compile_edge_news">
+	    <delete dir="${build.ejb.dir}"/>
+	    <delete dir="${build.classes.dir}"/>
+	    <mkdir dir="${build.ejb.dir}"/>
+	    <mkdir dir="${build.classes.dir}"/>
+	    <javac srcdir="${basedir}/../../../"
+	        destdir="${build.classes.dir}"
+	        includes="com/b4utrade/ejb/EdgeNewsData**"
+	        debug="on"
+	        deprecation="on"
+	        optimize="off"
+	    >
+	    	<classpath path="${classpath}" />       
+	    </javac>
+	</target>
+
+	<target name="edgenews" depends="compile_edge_news">
+		<mkdir dir="${build.ejb.dir}/META-INF"/>    
+		<jar jarfile="${build.ejb.dir}/ejbEdgeNewsCache.jar">
+			<fileset dir="${build.classes.dir}">
+				<include name="com/b4utrade/ejb/**" />
+			</fileset>
+			<fileset dir="${build.ejb.dir}">
+				<include name="META-INF/ejb-jar.xml" />
+				<include name="META-INF/jboss.xml" />
+			</fileset>
+		</jar>  
+		<copy todir="${ejb.dist.dir}">
+			<fileset dir="${build.ejb.dir}" includes="**/*.jar"/>
+		</copy>   
+	</target>
+    
+    <target name="compile_news">
+      <delete dir="${build.ejb.dir}"/>
+      <delete dir="${build.classes.dir}"/>
+      <mkdir dir="${build.ejb.dir}"/>
+      <mkdir dir="${build.classes.dir}"/>  
+      <javac srcdir="${basedir}/../../../"
+           destdir="${build.classes.dir}"
+           includes="com/b4utrade/ejb/NewsData**"
+           debug="on"
+           deprecation="on"
+           optimize="off"
+      >
+       <classpath path="${classpath}" />       
+      </javac>
+    </target>
+
+    <target name="news" depends="compile_news">
+        <mkdir dir="${build.ejb.dir}/META-INF"/>
+        <jar jarfile="${build.ejb.dir}/ejbNewsCache.jar">
+            <fileset dir="${build.classes.dir}">
+                <include name="com/b4utrade/ejb/**" />
+            </fileset>
+            <fileset dir="${build.ejb.dir}">
+                <include name="META-INF/ejb-jar.xml" />
+                <include name="META-INF/jboss.xml" />
+            </fileset>
+        </jar>
+        <copy todir="${ejb.dist.dir}">
+          <fileset dir="${build.ejb.dir}" includes="**/*.jar"/>
+        </copy>
+    </target>
+ 
+    <target name="compile_tsq">
+      <delete dir="${build.ejb.dir}"/>
+      <delete dir="${build.classes.dir}"/>
+      <mkdir dir="${build.ejb.dir}"/>
+      <mkdir dir="${build.classes.dir}"/>
+      <javac srcdir="${basedir}/../../../"
+           destdir="${build.classes.dir}"
+           includes="com/b4utrade/ejb/TSQ**"
+           debug="on"
+           deprecation="on"
+           optimize="off"
+      >
+       <classpath path="${classpath}" />       
+      </javac>
+    </target>
+
+    <target name="tsq" depends="compile_tsq">
+        <mkdir dir="${build.ejb.dir}/META-INF"/>
+        <jar jarfile="${build.ejb.dir}/ejbTSQSubscriber.jar">
+            <fileset dir="${build.classes.dir}">
+                <include name="com/b4utrade/ejb/**" />
+            </fileset>
+            <fileset dir="${build.ejb.dir}">
+                <include name="META-INF/ejb-jar.xml" />
+                <include name="META-INF/jboss.xml" />
+            </fileset>
+        </jar>
+        <copy todir="${ejb.dist.dir}">
+          <fileset dir="${build.ejb.dir}" includes="**/*.jar"/>
+        </copy>
+    </target>
+		
+</project>

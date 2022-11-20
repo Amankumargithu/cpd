@@ -1,0 +1,169 @@
+package com.quodd.future;
+
+import static com.quodd.future.FuturesCPD.gson;
+
+import java.lang.reflect.Type;
+import java.net.URLDecoder;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.Map;
+
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+import com.quodd.util.DateTimeUtility;
+
+import QuoddFeed.msg.Image;
+import ntp.bean.QTCPDMessageBean;
+import spark.Request;
+import spark.Response;
+import spark.Route;
+
+public class FutureDataController {
+
+	private static final Type dataListType = new TypeToken<HashSet<String>>() {
+	}.getType();
+
+	public static final Route healthCheck = (Request request, Response response) -> {
+		return "ok";
+	};
+
+	// public ArrayList getFutureChainByDescription(String ticker,int
+	// pagingIndex,boolean fitlerOn);
+	public static final Route getFutureChainByDescription = (Request request, Response response) -> {
+		final String ticker = request.queryParams("ticker");
+		final String pagingIndexString = request.queryParams("pagingIndex");
+		final String filterOnString = request.queryParams("filterOn");
+		int pagingIndex = Integer.parseInt(pagingIndexString);
+		boolean filterOn = Boolean.parseBoolean(filterOnString);
+		return (FuturesMappingSymbolsCache.getInstance().getFutureChainByDescription(ticker, pagingIndex, filterOn));
+	};
+
+	// public ArrayList getFutureChainByBaseSymbol(String ticker);
+	public static final Route getFutureChainByBaseSymbol = (Request request, Response response) -> {
+		final String ticker = request.params("ticker");
+		return (FuturesMappingSymbolsCache.getInstance().getFutureChainByBaseSymbol(ticker));
+	};
+
+	// public StockOptionBean getStockOption(String optionTicker) ;
+	public static final Route getStockOption = (Request request, Response response) -> {
+		final String ticker = request.params("ticker");
+		return FuturesMappingSymbolsCache.getInstance().getFundamentalData(ticker);
+	};
+
+	// public LinkedList getOptionQuote(String optionTickers) ;
+	public static final Route getOptionQuote = (Request request, Response response) -> {
+		final String optionTickers = request.params("ticker");
+		LinkedList<byte[]> stocks = new LinkedList<byte[]>();
+		FuturesQTMessageQueue cache = FuturesQTMessageQueue.getInstance();
+		try {
+			HashSet<String> resubscribeSet = new HashSet<String>();
+			String[] tickerArray = optionTickers.split(",");
+			for (int j = 0; j < tickerArray.length; j++) {
+				String ticker = tickerArray[j];
+				if (!cache.isIncorrectSymbol(ticker)) {
+					QTCPDMessageBean bean = cache.getSubsData().get(ticker);
+					if (bean != null)
+						stocks.add(bean.toByteArray());
+					else
+						resubscribeSet.add(ticker);
+				}
+			}
+			FuturesStreamingController.getInstance().addRequestedSymbols(resubscribeSet);
+			if (resubscribeSet.size() > 0) {
+				LinkedList<Image> images = FuturesSnapController.getInstance().getSyncSnapData(resubscribeSet);
+				for (Image image : images) {
+					QTCPDMessageBean qtMessageBean = new QTCPDMessageBean();
+					String ticker = image.tkr();
+					int quoteIndex = ticker.indexOf("\"");
+					if (quoteIndex != -1)
+						ticker = ticker.substring(0, quoteIndex);
+					qtMessageBean.setTicker(ticker);
+					qtMessageBean.setSystemTicker(ticker);
+					if (image._trdPrc > 0.0)
+						qtMessageBean.setLastPrice(image._trdPrc);
+					else {
+						image._trdPrc = image._close;
+						qtMessageBean.setLastPrice(image._close);
+					}
+					qtMessageBean.setLastClosedPrice(image._close);
+					qtMessageBean.setLastTradeVolume(image._trdVol);
+					qtMessageBean.setVolume(image._acVol);
+					qtMessageBean.setDayHigh(image._high);
+					qtMessageBean.setDayLow(image._low);
+					qtMessageBean.setAskPrice(image._ask);
+					qtMessageBean.setAskSize(image._askSize);
+					qtMessageBean.setBidPrice(image._bid);
+					qtMessageBean.setBidSize(image._bidSize);
+					qtMessageBean.setChangePrice(image._netChg);
+					qtMessageBean.setPercentChange(image._pctChg);
+					qtMessageBean.setOpenPrice(image._open);
+					qtMessageBean.setOpenPriceRange1(image._open);
+					qtMessageBean.setBidExchangeCode(image._iBidMktCtr + "");
+					qtMessageBean.setAskExchangeCode(image._iAskMktCtr + "");
+					qtMessageBean.setSettlementPrice(image._settlePrc);
+					qtMessageBean.setExchangeId("" + image.protocol());
+					System.out.println(ticker + " " + image.protocol());
+					DateTimeUtility.getDefaultInstance().processDate(qtMessageBean, image._trdTime);
+					qtMessageBean.setTickUpDown(image._prcTck);
+					stocks.add(qtMessageBean.toByteArray());
+				}
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return stocks;
+	};
+
+	// public HashMap getSpotSymbolMap() ;
+	public static final Route getSpotSymbolMap = (Request request, Response response) -> {
+		try {
+			Map<String, ArrayList<String>> map = FuturesMappingSymbolsCache.getInstance().getUiFutureSymbolMap();
+			System.out.println("Map is : "+map);
+			String jsonString = new Gson().toJson(map);
+			System.out.println("json is : "+jsonString);
+			return jsonString;
+		}catch(Exception e) {
+			e.printStackTrace();
+			return "got exception";
+		}
+		
+	};
+
+	// public String updateFutureMapping(String UITicker, String oldMappedTicker,
+	// String mappedTicker);
+	public static final Route updateFutureMapping = (Request request, Response response) -> {
+		final String dataType = request.params("ticker");
+		return "";
+		// return FuturesMappingSymbolsCache.getInstance().updateFutureMapping(UITicker,
+		// oldMappedTicker, mappedTicker);
+
+	};
+
+	// public void subscribe(String id, Object[] keys);
+	public static final Route subscribe = (Request request, Response response) -> {
+		try {
+			String body = request.body();
+			body = URLDecoder.decode(body, "UTF-8");
+			final HashSet<String> set = gson.fromJson(body, dataListType);
+			FuturesStreamingController.getInstance().addRequestedSymbols(set);
+			return "Symbols subscribed ";
+		} catch (Exception e) {
+			e.printStackTrace();
+			return "Symbols not subscribed ";
+		}
+	};
+	
+	public static final Route getDetaileQuotes = (Request request, Response response) -> {
+		
+			final String ticker = request.params("ticker");
+			return FuturesMappingSymbolsCache.getInstance().getFundamentalData(ticker);
+
+
+		};
+
+
+	private FutureDataController() {
+		throw new UnsupportedOperationException();
+	}
+}

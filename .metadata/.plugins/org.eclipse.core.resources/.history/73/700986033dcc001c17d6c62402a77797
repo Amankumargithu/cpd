@@ -1,0 +1,10 @@
+package dogstatsd;
+
+public class stasd {
+
+	public static void main(String[] args) {
+		// TODO Auto-generated method stub
+
+	}
+
+}

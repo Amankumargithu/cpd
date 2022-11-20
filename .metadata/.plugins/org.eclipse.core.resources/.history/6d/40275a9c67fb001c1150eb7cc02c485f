@@ -1,0 +1,743 @@
+/******************************************************************************
+*
+*  grepTSQ.java
+*     Pump TSQ via TSQPump
+*
+*  REVISION HISTORY:
+*     25 MAY 2015 jcs  Created.
+*     24 JUN 2015 jcs  Build  94: <QuoddMsg>.Dump()
+*     13 SEP 2015 jcs  Build  97: bAll
+*      5 JAN 2017 jcs  Build 102: bCSV
+*     25 JUL 2017 jcs  Build 103: bSort
+*
+*  (c) 2011-2017 Quodd Financial
+*******************************************************************************/
+package com.quodd.examples;
+
+import java.io.*;
+import java.util.*;
+import QuoddFeed.msg.*;
+import QuoddFeed.MD.*;
+import QuoddFeed.util.*;
+
+
+/////////////////////////////////////////////////////////////////
+//
+//               c l a s s   g r e p T S Q
+//
+/////////////////////////////////////////////////////////////////
+
+public class grepTSQ extends TSQPump
+{
+   //////////////////////
+   // Class-wide
+   //////////////////////
+   enum qMsg {
+      QuoddMsg,
+      Tracer,
+      EQQuote,
+      EQQuoteMM,
+      OPQuote,
+      EQBbo,
+      EQBboMM,
+      OPBbo,
+      OPTrade,
+      OPTradeCxl,
+      EQTrade,
+      EQTradeCxl,
+      EQTradeSts,
+      EQMktStats,
+      EQLimitUpDn,
+      FUNDnav,
+      IDXValue,
+      IDXSummary,
+      FUTRQuote,
+      FUTRTrade,
+      FUTRSumm,
+      FUTRMisc,
+      BONDQuote,
+      BONDTrade
+   }
+
+   static private final String[] _filter = {
+      "QuoddMsg",
+      "Tracer",
+      "EQQuote",
+      "EQQuoteMM",
+      "OPQuote",
+      "EQBbo",
+      "EQBboMM",
+      "OPBbo",
+      "OPTrade",
+      "OPTradeCxl",
+      "EQTrade",
+      "EQTradeCxl",
+      "EQTradeSts",
+      "EQMktStats",
+      "EQLimitUpDn",
+      "FUNDnav",
+      "IDXValue",
+      "IDXSummary",
+      "FUTRQuote",
+      "FUTRTrade",
+      "FUTRSumm",
+      "FUTRMisc",
+      "BONDQuote",
+      "BONDTrade"
+   };
+
+   //////////////////////
+   // Instance Members
+   //////////////////////
+   private PrintStream   cout;
+   private boolean       _bTkrStart;
+   private boolean       _bMsgLog;
+   private boolean       _bCSV;
+   private HashSet<qMsg> _msgFltr;
+
+   //////////////////////
+   // Constructor
+   //////////////////////
+   public grepTSQ( String  idxFile, 
+                   String  dataFile, 
+                   boolean bTkrStart,
+                   boolean bMsgLog,
+                   boolean bCSV )
+   {
+      super( idxFile, dataFile );
+      cout       = System.out;
+      _bTkrStart = bTkrStart;
+      _bMsgLog   = bMsgLog;
+      _bCSV      = bCSV;
+      _msgFltr   = new HashSet<qMsg>();
+   }
+
+
+   //////////////////////
+   // Watchlist / Msg Filter
+   //////////////////////
+   boolean IsWatched( QuoddMsg qm, qMsg mt )
+   {
+      int nw, nm;
+      
+      // Pre-condition
+
+      nw = NumWatch();
+      nm = _msgFltr.size();
+      if ( ( nw == 0 ) && ( nm == 0 ) )
+         return true;
+
+      // Logical AND
+
+      if ( ( nw > 0 ) && !IsWatched( qm.tkr() ) )
+         return false;
+      if ( ( nm > 0 ) && !_msgFltr.contains( mt ) )
+         return false;
+      return true;
+   }
+
+   int SetMsgFilter( String[] tdb )
+   {
+      int i, nt;
+
+      // Pre-condition
+
+      if ( tdb == null ) 
+         return _msgFltr.size(); 
+ 
+      // Load 
+
+      nt = tdb.length;
+      for ( i=0; i<nt; i++ ) {
+         if ( tdb[i].equals( "QuoddMsg" ) )
+            _msgFltr.add( qMsg.QuoddMsg );
+         else if ( tdb[i].equals( "Tracer" ) )
+            _msgFltr.add( qMsg.Tracer );
+         else if ( tdb[i].equals( "EQQuote" ) )
+            _msgFltr.add( qMsg.EQQuote );
+         else if ( tdb[i].equals( "EQQuoteMM" ) )
+            _msgFltr.add( qMsg.EQQuoteMM );
+         else if ( tdb[i].equals( "OPQuote" ) )
+            _msgFltr.add( qMsg.OPQuote );
+         else if ( tdb[i].equals( "EQBbo" ) )
+            _msgFltr.add( qMsg.EQBbo );
+         else if ( tdb[i].equals( "EQBboMM" ) )
+            _msgFltr.add( qMsg.EQBboMM );
+         else if ( tdb[i].equals( "OPBbo" ) )
+            _msgFltr.add( qMsg.OPBbo );
+         else if ( tdb[i].equals( "OPTrade" ) )
+            _msgFltr.add( qMsg.OPTrade );
+         else if ( tdb[i].equals( "OPTradeCxl" ) )
+            _msgFltr.add( qMsg.OPTradeCxl );
+         else if ( tdb[i].equals( "EQTrade" ) )
+            _msgFltr.add( qMsg.EQTrade );
+         else if ( tdb[i].equals( "EQTradeCxl" ) )
+            _msgFltr.add( qMsg.EQTradeCxl );
+         else if ( tdb[i].equals( "EQTradeSts" ) )
+            _msgFltr.add( qMsg.EQTradeSts );
+         else if ( tdb[i].equals( "EQMktStats" ) )
+            _msgFltr.add( qMsg.EQMktStats );
+         else if ( tdb[i].equals( "EQLimitUpDn" ) )
+            _msgFltr.add( qMsg.EQLimitUpDn );
+         else if ( tdb[i].equals( "FUNDnav" ) )
+            _msgFltr.add( qMsg.FUNDnav );
+         else if ( tdb[i].equals( "IDXValue" ) )
+            _msgFltr.add( qMsg.IDXValue );
+         else if ( tdb[i].equals( "IDXSummary" ) )
+            _msgFltr.add( qMsg.IDXSummary );
+         else if ( tdb[i].equals( "FUTRQuote" ) )
+            _msgFltr.add( qMsg.FUTRQuote );
+         else if ( tdb[i].equals( "FUTRTrade" ) )
+            _msgFltr.add( qMsg.FUTRTrade );
+         else if ( tdb[i].equals( "FUTRSumm" ) )
+            _msgFltr.add( qMsg.FUTRSumm );
+         else if ( tdb[i].equals( "FUTRMisc" ) )
+            _msgFltr.add( qMsg.FUTRMisc );
+         else if ( tdb[i].equals( "BONDQuote" ) )
+            _msgFltr.add( qMsg.BONDQuote );
+         else if ( tdb[i].equals( "BONDTrade" ) )
+            _msgFltr.add( qMsg.BONDTrade );
+      }
+      return _msgFltr.size();
+   }
+
+
+   //////////////////////
+   // TSQPump Interface
+   //////////////////////
+   /**
+    * \brief Callback invoked when Index File is loading
+    *
+    * @param idxFile Index filename
+    */
+   public void OnIndexFileStart( String idxFile )
+   {
+      cout.printf( "[%s] INDEX file %s loading ...\n", Now(), idxFile );
+   }
+
+   /**
+    * \brief Callback invoked when Index File has been loaded
+    *
+    * @param idxFile Index filename
+    */
+   public void OnIndexFileLoaded( String idxFile )
+   {
+      cout.printf( "[%s] INDEX file %s loaded\n", Now(), idxFile );
+   }
+
+   /**
+    * \brief Callback invoked when Data File is loading
+    *
+    * @param dataFile Data filename
+    */
+   public void OnDataFileStart( String dataFile )
+   {
+      cout.printf( "[%s] DATA  file %s loading ...\n", Now(), dataFile );
+   }
+
+   /**
+    * \brief Callback invoked when Data File has been loaded
+    *
+    * @param dataFile Data filename
+    */
+   public void OnDataFileLoaded( String dataFile )
+   {
+      cout.printf( "[%s] DATA  file %s loaded\n", Now(), dataFile );
+   }
+
+   /**
+    * \brief Callback invoked when query begins
+    *
+    * @param bSorted true if sorted query
+    */
+   public void OnQueryStart( boolean bSorted )
+   {
+      String ty = bSorted ? "SORTED" : "UNSORTED";
+
+//      cout.printf( "[%s] OnQueryStart( %s )\n", Now(), ty );
+   }
+
+   /**
+    * \brief Callback invoked when data file is mapped
+    *
+    * @param dFile Name of file just mapped in
+    * @param tm Time slice mapped in HH:MM:SS
+    * @param off Mapped file window offset
+    * @param len Mapped file window len
+    */
+   public void OnFileMapped( String dFile, String tm, long off, long len )
+   {
+      String fmt; 
+      long   oMB, lMB;
+
+      oMB = off / ( _K*_K );
+      lMB = len / ( _K*_K );
+      fmt = "[%s] %s mapped at %dMB for %dMB\n";
+      cout.printf( fmt, Now(), tm, oMB, lMB );
+   }
+
+   /**
+    * \brief Callback invoked when TSQ query is complete
+    *
+    * @param tot Total msgs queried 
+    */
+   public void OnQueryComplete( long total )
+   {
+//      cout.printf( "[%s] OnQueryComplete( %d )\n", Now(), total );
+   }
+
+   /**
+    * \brief Callback invoked when TSQ query sort is complete
+    *
+    * @param total Total msgs queried and sorted
+    */
+   public void OnSortComplete( int total )
+   {
+      cout.printf( "[%s] OnSortComplete( %d )\n", Now(), total );
+   }
+
+   /**
+    * \brief Callback invoked when TSQ query for specified ticker starts
+    *
+    * @param tkr - Ticker name
+    * @param nTkr - Ticker name
+    * @param totTkr - Total tickers in TSQ File
+    */
+   public void OnTickerStart( String tkr, int nTkr, int totTkr )
+   {
+      String fmt;
+
+      if ( _bTkrStart ) {
+         fmt = "[%s] {%d of %d} OnTickerStart( %s )\n";
+         cout.printf( fmt, Now(), nTkr, totTkr, tkr );
+      }
+   }
+
+   /**
+    * \brief Callback invoked when TSQ query for specified ticker ends
+    *
+    * @param tkr - Ticker name
+    * @param total - Total msgs pumped for ticker
+    */
+   public void OnTickerEnd( String tkr, int total )
+   {
+//      cout.printf( "[%s] OnTickerEnd( %s ) : %d msgs\n", Now(), tkr, total );
+   }
+
+   /**
+    * \brief Callback invoked when TSQ error occurs
+    *
+    * @param txt Textual description of error
+    */
+   public void OnError( String txt )
+   {
+      cout.printf( "[%s] OnError( %s )\n", Now(), txt );
+   }
+
+
+   //////////////////////
+   // IUpdate Interface
+   //////////////////////
+   /**
+    * Called when an unknown QuoddMsg is received.  Should never be called.
+    */
+   public void OnQuoddMsg( String StreamName, QuoddMsg qm )
+   {
+      if ( !IsWatched( qm, qMsg.QuoddMsg ) )
+         return;
+      if ( _bMsgLog )
+          
+    	  cout.printf("aman\n");
+        // cout.printf( "%s; mt=%c; mtSub=%c\n", qm.Dump(), qm.mt(), qm.mtSub() );
+      else
+         cout.printf( "%s\n", qm.DumpHdr() );
+      System.out.println("hlo how are you");
+     // cout.printf( hexMsg( qm.buf(), qm.bufOff(), qm.len() ) );
+   }
+
+   /**
+    * Called when an EQQuote update is received for an equity ticker.
+    */
+   public void OnUpdate( String StreamName, EQQuote q )
+   {
+      if ( !IsWatched( q, qMsg.EQQuote ) )
+         return;
+      if ( _bCSV ) {
+         cout.printf( "%s,%s,%d,", q.pTimeMs(), q.tkr(), q.RTL() );
+         cout.printf( "%.4f,%d,", q._bid, q._bidSize );
+         cout.printf( "%.4f,%d,", q._ask, q._askSize );
+         cout.printf( ",,\n" );
+      } 
+      else if ( _bMsgLog )
+         cout.print( q.Dump() );
+      else
+         cout.printf( "%s\n", q.DumpHdr() );
+   }
+
+   /**
+    * Called when an EQBbo update is received for an equity ticker.
+    */
+   public void OnUpdate( String StreamName, EQBbo q )
+   {
+      if ( !IsWatched( q, qMsg.EQBbo ) )
+         return;
+      if ( _bCSV ) {
+         cout.printf( "%s,%s,%d,", q.pTimeMs(), q.tkr(), q.RTL() );
+         cout.printf( "%.4f,%d,", q._bid, q._bidSize );
+         cout.printf( "%.4f,%d,", q._ask, q._askSize );
+         cout.printf( ",,\n" );
+      }
+      else if ( _bMsgLog )
+         cout.print( q.Dump() );
+      else
+         cout.printf( "%s\n", q.DumpHdr() );
+   }
+
+   /**
+    * Called when an EQQuoteMM update is received for an equity ticker.
+    */
+   public void OnUpdate( String StreamName, EQQuoteMM q )
+   {
+      if ( !IsWatched( q, qMsg.EQQuoteMM ) )
+         return;
+      if ( _bMsgLog )
+         cout.print( q.Dump() );
+      else
+         cout.printf( "%s\n", q.DumpHdr() );
+   }
+
+   /**
+    * Called when an EQBboMM update is received for an equity ticker.
+    */
+   public void OnUpdate( String StreamName, EQBboMM q )
+   {
+      if ( !IsWatched( q, qMsg.EQBboMM ) )
+         return;
+      if ( _bMsgLog )
+         cout.print( q.Dump() );
+      else
+         cout.printf( "%s\n", q.DumpHdr() );
+   }
+
+   /**
+    * Called when an EQTrade update is received for an equity ticker.
+    */
+   public void OnUpdate( String StreamName, EQTrade trd )
+   {
+      qMsg mt;
+
+      mt = trd.IsCxl() ? qMsg.EQTradeCxl : qMsg.EQTrade;
+      if ( !IsWatched( trd, mt ) )
+         return;
+      if ( _bCSV ) {
+         cout.printf( "%s,%s,%d,", trd.pTimeMs(), trd.tkr(), trd.RTL() );
+         cout.printf( "%.4f,%d,", trd._bid, trd._bidSize );
+         cout.printf( "%.4f,%d,", trd._ask, trd._askSize );
+         cout.printf( "%.4f,%d,\n", trd._trdPrc, trd._trdVol );
+      }
+      else if ( _bMsgLog )
+         cout.print( trd.Dump() );
+      else
+         cout.printf( "%s\n", trd.DumpHdr() );
+   }
+
+   /**
+    * Called when an EQTradeSts update is received for an equity ticker.
+    */
+   public void OnUpdate( String StreamName, EQTradeSts sts )
+   {
+      if ( !IsWatched( sts, qMsg.EQTradeSts ) )
+         return;
+      if ( _bMsgLog )
+         cout.print( sts.Dump() );
+      else
+         cout.printf( "%s\n", sts.DumpHdr() );
+   }
+
+   /**
+    * Called when an EQLimitUpDn update is received.
+    */
+   public void OnUpdate( String StreamName, EQLimitUpDn lim )
+   {
+      if ( !IsWatched( lim, qMsg.EQLimitUpDn ) )
+         return;
+      if ( _bMsgLog )
+         cout.print( lim.Dump() );
+      else
+         cout.printf( "%s\n", lim.DumpHdr() );
+   }
+
+   /**
+    * Called when an OPQuote update is received for an option ticker.
+    */
+   public void OnUpdate( String StreamName, OPQuote q )
+   {
+      if ( !IsWatched( q, qMsg.OPQuote ) )
+         return;
+      if ( _bMsgLog )
+         cout.print( q.Dump() );
+      else
+         cout.printf( "%s\n", q.DumpHdr() );
+   }
+
+   /**
+    * Called when an OPBbo update is received for an option ticker.
+    */
+   public void OnUpdate( String StreamName, OPBbo q )
+   {
+      if ( !IsWatched( q, qMsg.OPBbo ) )
+         return;
+      if ( _bMsgLog )
+         cout.print( q.Dump() );
+      else
+         cout.printf( "%s\n", q.DumpHdr() );
+   }
+
+   /**
+    * Called when an OPTrade update is received for an option ticker.
+    */
+   public void OnUpdate( String StreamName, OPTrade trd )
+   {
+      qMsg mt;
+
+      mt = trd.IsCxl() ? qMsg.OPTradeCxl : qMsg.OPTrade;
+      if ( !IsWatched( trd, mt ) )
+         return;
+      if ( _bMsgLog )
+         cout.print( trd.Dump() );
+      else
+         cout.printf( "%s\n", trd.DumpHdr() );
+   }
+
+   /**
+    * Called when an IDXValue update is received for an index ticker.
+    */
+   public void OnUpdate( String StreamName, IDXValue ix )
+   {
+      if ( !IsWatched( ix, qMsg.IDXValue ) )
+         return;
+      if ( _bMsgLog )
+         cout.print( ix.Dump() );
+      else
+         cout.printf( "%s\n", ix.DumpHdr() );
+   }
+
+   /**
+    * Called when an IDXSummary update is received for an index ticker.
+    */
+   public void OnUpdate( String StreamName, IDXSummary q )
+   {
+      if ( !IsWatched( q, qMsg.IDXSummary ) )
+         return;
+      if ( _bMsgLog )
+         cout.print( q.Dump() );
+      else
+         cout.printf( "%s\n", q.DumpHdr() );
+   }
+
+   /**
+    * Called when FUNDnav message is received
+    */
+   public void OnUpdate( String StreamName, FUNDnav q )
+   {
+      if ( !IsWatched( q, qMsg.FUNDnav ) )
+         return;
+      if ( _bMsgLog )
+         cout.print( q.Dump() );
+      else
+         cout.printf( "%s\n", q.DumpHdr() );
+   }
+
+   /**
+    * Called when FUTRTrade message is received
+    */
+   public void OnUpdate( String StreamName, FUTRTrade trd )
+   {
+      if ( !IsWatched( trd, qMsg.FUTRTrade ) )
+         return;
+      if ( _bMsgLog )
+         cout.print( trd.Dump() );
+      else
+         cout.printf( "%s\n", trd.DumpHdr() );
+   }
+
+   /**
+    * Called when an Futures Summary is received.
+    */
+   public void OnUpdate( String StreamName, FUTRSumm q )
+   {
+      if ( !IsWatched( q, qMsg.FUTRSumm ) )
+         return;
+      if ( _bMsgLog )
+         cout.print( q.Dump() );
+      else
+         cout.printf( "%s\n", q.DumpHdr() );
+   }
+
+   /**
+    * Called when an Futures HiLoLast or OpenInt is received.
+    */
+   public void OnUpdate( String StreamName, FUTRMisc q )
+   {
+      if ( !IsWatched( q, qMsg.FUTRMisc ) )
+         return;
+      if ( _bMsgLog )
+         cout.print( q.Dump() );
+      else
+         cout.printf( "%s\n", q.DumpHdr() );
+   }
+
+   /**
+    * Called when FUTRQuote message is received
+    */
+   public void OnUpdate( String StreamName, FUTRQuote q )
+   {
+      if ( !IsWatched( q, qMsg.FUTRQuote ) )
+         return;
+      if ( _bMsgLog )
+         cout.print( q.Dump() );
+      else
+         cout.printf( "%s\n", q.DumpHdr() );
+   }
+
+   /**
+    * Called when an BONDQuote update is received for an Bond ticker.
+    */
+   public void OnUpdate( String StreamName, BONDQuote q )
+   {
+      if ( !IsWatched( q, qMsg.BONDQuote ) )
+         return;
+      if ( _bMsgLog )
+         cout.print( q.Dump() );
+      else
+         cout.printf( "%s\n", q.DumpHdr() );
+   }
+
+   /**
+    * Called when an BONDTrade update is received for an Bond ticker
+    */
+   public void OnUpdate( String StreamName, BONDTrade trd )
+   {
+      if ( !IsWatched( trd, qMsg.BONDTrade ) )
+         return;
+      if ( _bMsgLog )
+         cout.print( trd.Dump() );
+      else
+         cout.printf( "%s\n", trd.DumpHdr() );
+   }
+
+
+   //////////////////////
+   // Helpers
+   //////////////////////
+   private String[] _ReadFlatAsciiFile( String pFile )
+   {
+      String[]        rtn;
+      String          line;
+      BufferedReader  buf;
+      HashSet<String> hdb;
+      int             i, n;
+
+      rtn = null;
+      try {
+         buf = new BufferedReader( new FileReader( pFile ) );
+         hdb = new HashSet<String>();
+         for ( ; (line=buf.readLine()) != null; hdb.add( line ) );
+         buf.close();
+         n   = hdb.size();
+         rtn = new String[n];
+         i   = 0;
+         for ( String tkr : hdb ) 
+            rtn[i++] = tkr;
+      } catch( Exception e ) {
+         cout.printf( "ERROR loading %s : %s\n", pFile, e.getMessage() );
+      }
+      return rtn;
+   }
+
+
+   /////////////////////////
+   //
+   //  main()
+   //
+   /////////////////////////
+   public static void main( String args[] )
+   {
+      grepTSQ      grep;
+      UCfileConfig cfg;
+      PrintStream  cout = System.out;
+      int          argc, i, nt, nm;
+      long         nPmp;
+      boolean      bDmp, bTkr, bAll, bCSV, bSort;
+      String       iFile, dFile, tFile, mFltr, t0, t1, fmt, pt;
+      String[]     wl;
+
+      // Quick Check
+
+      argc = args.length;
+      cfg  = new UCfileConfig();
+      if ( argc == 0 ) {
+         cout.printf( "Usage : grepTSQ <config_file>; Exitting ...\n" );
+         return;
+      }
+      if ( args[0].equals( "--version" ) ) {
+         cout.printf( "%s\n", QuoddMsg.Version() );
+         return;
+      }
+      if ( args[0].equals( "--help" ) ) {
+         cout.print( cfg.Dump() );
+         return;
+      }
+      if ( args[0].equals( "--filter" ) ) {
+         nm = _filter.length;
+         for ( i=0; i<nm; cout.printf( "%s\n", _filter[i++] ) );
+         return;
+      }
+
+      // Load Config
+
+      cfg.AddString( "IndexFile", "/dev/null" );
+      cfg.AddString( "DataFile", "/dev/null" );
+      cfg.AddString( "StartTime", "09:30:00" );
+      cfg.AddString( "EndTime", "09:45:00" );
+      cfg.AddString( "TickerFile", "/dev/null" );
+      cfg.AddString( "MessageFilter", "" );
+      cfg.AddBool( "TkrStart", false );
+      cfg.AddBool( "MsgDump", false );
+      cfg.AddBool( "PumpAll", true );
+      cfg.Load( args[0] );
+      iFile = cfg.GetString( "IndexFile" );
+      dFile = cfg.GetString( "DataFile" );
+      tFile = cfg.GetString( "TickerFile" );
+      mFltr = cfg.GetString( "MessageFilter" );
+      t0    = cfg.GetString( "StartTime" );
+      t1    = cfg.GetString( "EndTime" );
+      bTkr  = cfg.GetBool( "TkrStart" );
+      bDmp  = cfg.GetBool( "MsgDump" );
+      bCSV  = cfg.GetBool( "CSV" );
+      bAll  = cfg.GetBool( "PumpAll" );
+      bSort = bAll && ( cfg.GetBool( "Sort" ) || cfg.GetBool( "Sorted" ) );
+      pt    = bAll  ? "PumpAll()" : "PumpTicker()";
+      pt   += bSort ? "-sort" : "";
+      grep  = new grepTSQ( iFile, dFile, bTkr, bDmp, bCSV );
+      wl    = grep._ReadFlatAsciiFile( tFile );
+      if ( bAll )
+         nt = grep.SetWatchlist( wl );
+      else
+         nt = ( wl != null ) ? wl.length : 0;
+      nm    = grep.SetMsgFilter( mFltr.split(",") );
+      fmt   = "[%s] Started; Watching %d tkrs; %d msgs; %s ...\n";
+      cout.printf( fmt, Now(), nt, nm, pt );
+      if ( bCSV )
+         cout.printf( "Time,Ticker,SeqNum,Bid,BidSz,Ask,AskSz,TrdPrc,TrdVol\n" );
+      grep.Start();
+// raw_input( "Hit <ENTER> to PumpAll() ...\n" );
+      nPmp = bAll ? grep.PumpAll( t0, t1, bSort ) : 0;
+      for ( i=0; i<nt && !bAll; nPmp+=grep.PumpTicker( t0,t1,wl[i++] ) );
+// raw_input( "Hit <ENTER> to Destroy() ...\n" );
+      grep.Destroy();
+// raw_input( "Hit <ENTER> to exit ...\n" );
+      cout.printf( "[%s] %d msgs pumped\n", Now(), nPmp );
+      cout.printf( "[%s] Done!!\n", Now() );
+   }
+} // class grepTSQ

@@ -1,0 +1,296 @@
+##
+##
+##      iBus//MessageBus client configuration file
+##
+##      config.ibusjms.txt
+##
+##      NOTE: This file is read by an instance of java.util.Properties.
+##      The syntax is defined in the documentation of the Properties
+##      class.
+##
+##      NOTE: The client looks for its JAR file in the CLASSPATH and
+##      then tries to load this file from the same directory.
+##
+##      NOTE: For a more detailed description of the configuration
+##      parameters please check out the JMS Client Installation and
+##      Programmer's Manual.
+##
+##      NOTE: Trailing spaces should be avoided in this configuration file.
+##
+##      NOTE: You can specify different parameters for topic and queue
+##      connection respectively. The default is the same for both.
+##
+##      QUICK-START: Set the 'serverTransport' accordingly (default is TCP)
+##      plus adjust the 'serverName'
+##
+
+#############################################################################
+#############################################################################
+##
+##      General PARAMETERS
+##      ==================
+##
+##      Banner printout
+##      ===============
+##
+##      Whether to print the version number in iBus//MessageBus (true or false).
+ibus.version=true
+
+#############################################################################
+#############################################################################
+##
+##      ConnectionFactory PARAMETERS
+##      ============================
+##
+##
+##      JMS provider
+##      ============
+##
+##      Which iBus JMS provider should be used by default?
+##      Use 'msrv' for iBus//MessageServer.
+##
+
+ibusjms.topicConnectionFactory.provider=mbus
+ibusjms.queueConnectionFactory.provider=mbus
+##      (queueConnectionFactory: Only if combining server and bus in one
+##      application: contactinfo@softwired-inc.com for further information.)
+
+
+##
+##
+##      DEFAULT TRANSPORT DEFINITION
+##      ============================
+##
+##      Here you can configure what transport you wish to use,
+##      Available preconfiguration is TCP.
+##
+
+##
+##      ibusjms.topicConnectionFactory.serverTransport
+##      ibusjms.queueConnectionFactory.serverTransport
+##      ----------------------------------------------
+##      Configures the desired quality of service per connection
+##      by name.  The name, e.g. TCP, is further mapped to an iBus quality of
+##      service by looking up ibusjms.topicConnectionFactory.transport.TCP
+##      The standard edition only supports TCP. For SSL and HTTP tunnelling
+##      please contact info@softwired-inc.com
+##
+
+ibusjms.topicConnectionFactory.serverTransport=TCP
+ibusjms.queueConnectionFactory.serverTransport=TCP
+
+
+##
+##
+##      TRANSPORT PROTOCOLS
+##      ===================
+##
+##      All the available transport protocols are defined below.
+##
+##
+
+##
+##      ibusjms.topicConnectionFactory.transport.TCP
+##      ibusjms.queueConnectionFactory.transport.TCP
+##      --------------------------------------------
+##      The definition for TCP.
+##
+
+ibusjms.topicConnectionFactory.transport.TCP=MUX:
+ibusjms.queueConnectionFactory.transport.TCP=MUX:
+
+
+##
+##
+##      Further parameters
+##      ==================
+##
+
+##
+##      ibusjms.topicConnectionFactory.serverName
+##      ibusjms.queueConnectionFactory.serverName
+##      -----------------------------------------
+##      Define the hostname on which iBus//MessageServer is running.
+##      (Only if combining server and bus in one application: contact
+##      info@softwired-inc.com for further information.)
+##
+##
+     ibusjms.topicConnectionFactory.serverPort=8180
+      ibusjms.queueConnectionFactory.serverPort=8180
+##      -----------------------------------------
+##      Define the port on which iBus//MessageServer is running.
+##      (Only if combining server and bus in one application: contact
+##      info@softwired-inc.com for further information.)
+##
+##
+##      ibusjms.topicConnectionFactory.connectTryInterval
+##      ibusjms.queueConnectionFactory.connectTryInterval
+##      -------------------------------------------------
+##      Controls the client's behavior when attempting to make initial reconnect
+##      to a failed server; number of milliseconds to wait between connection
+##      attempts.
+##
+
+ibusjms.topicConnectionFactory.connectTryInterval=10000
+ibusjms.queueConnectionFactory.connectTryInterval=10000
+
+##
+##      ibusjms.topicConnectionFactory.maxConnectTries
+##      ibusjms.queueConnectionFactory.maxConnectTries
+##      ----------------------------------------------
+##      Number of connect attempts to make before throwing
+##      exception in createTopicConnection()/createQueueConnection() for initial
+##      connection, or dispatching a ServerDiedException to the connection's
+##      ExceptionListener for failed connections.
+##
+
+ibusjms.topicConnectionFactory.maxConnectTries=90
+ibusjms.queueConnectionFactory.maxConnectTries=90
+
+##
+##      ibusjms.topicConnectionFactory.clientID
+##      ibusjms.queueConnectionFactory.clientID
+##      ---------------------------------------
+##      Configure the JMS clientID. If not configured, may be set via
+##      Connection.setClientID before doing any operations on the connection.
+##
+
+#ibusjms.topicConnectionFactory.clientID=thisIsMyClientID
+#ibusjms.queueConnectionFactory.clientID=thisIsMyOtherClientID
+
+ibusjms.topicConnectionFactory.dupsOKBundleSize=1000
+##      ibusjms.queueConnectionFactory.dupsOKBundleSize
+##      ------------------------------
+##      TYPE:   Integer
+##      VALUE:  20
+##      DESCRIPTION:
+##      Number of messages to acknowledge at a time in case of
+##      DUPS_OK_ACKNOWLEDGE.  A larger number could increase throughput
+##      while increasing the risk of receiving messages twice after an
+##      unclean exit of the consumer application.
+
+##      ibusjms.topicConnectionFactory.enableReconnect
+##      ibusjms.queueConnectionFactory.enableReconnect
+##      ------------------------------
+##      TYPE:   Boolean
+##      VALUE:  true
+##      DESCRIPTION:
+##      Whether to attempt to reconnect to the MessageServer if the
+##      connection is lost.  The default value of true makes connectivity
+##      problems transparent to the user.
+
+##
+##      ibusjms.topicConnectionFactory.maxListenerThreadsPerConnection
+##      ibusjms.queueConnectionFactory.maxListenerThreadsPerConnection
+##      ---------------------------------------
+##      Configure the number of MessageListener threads in thread pool;
+##      i.e. the number of MessageListeners that can be active at a given
+##      time.  A higher number creates more opportunities for parallelism
+##      at the cost of higher resource use.
+##
+
+#ibusjms.topicConnectionFactory.maxListenerThreadsPerConnection=10
+#ibusjms.queueConnectionFactory.maxListenerThreadsPerConnection=10
+
+##
+##      ibusjms.topicConnectionFactory.numMessagesPerListenerTimeSlice
+##      ibusjms.queueConnectionFactory.numMessagesPerListenerTimeSlice
+##      ---------------------------------------
+##      Configure the number of messages a MessageListener can process
+##      within a "time slice" scheduled by the thread pool.  A larger
+##      number reduces the cost of context switching at the price of
+##      some parallelism.
+##
+
+ibusjms.topicConnectionFactory.numMessagesPerListenerTimeSlice=1000
+#ibusjms.queueConnectionFactory.numMessagesPerListenerTimeSlice=10
+
+#############################################################################
+#############################################################################
+##
+##      Topic/Queue PARAMETERS
+##      ============================
+##
+##      ibusjms.topic.deliveryMode
+##      ibusjms.queue.deliveryMode
+##      ------------------------------
+##      TYPE:   String
+##      VALUE:  PERSISTENT or NON_PERSISTENT
+##      DESCRIPTION:
+##      Whether to persist messages to make their guarantee more reliable.
+##      iBus//MessageBus supports only NON_PERSISTENT.
+
+##      ibusjms.topic.priority
+##      ibusjms.queue.priority
+##      --------------------------
+##      TYPE:   Integer
+##      VALUE:  1-9
+##      DESCRIPTION:
+##      Suggests an ordering for delivery of messages.  Messages with a
+##      higher priority (9) tend to arrive before messages with a lower
+##      priority (1).
+
+ibusjms.topic.timeToLive=1
+##      ibusjms.queue.timeToLive
+##      ----------------------------
+##      TYPE:   Integer
+##      VALUE:  Non-negative integer
+##      DESCRIPTION:
+##      How long a message on this topic should live, unless overridden
+##      in the publish or send call.  Default = 0 = forever.
+
+##      ibusjms.topic.qos
+##      ibusjms.queue.qos
+##      ------------------------------
+##      TYPE:   String
+##      VALUE:  Default quality of service.
+##      DESCRIPTION:
+##      Can be overridden only in iBus//MessageBus.
+##      queue qos not defined, since not supported by iBus//MessageBus.
+
+ibusjms.topic.qos=DISPATCH(threadPerChannel=1,highmark=10):IPMCAST(interface=172.16.197.131,sendbuffersize=6553600,receivebuffersize=10000,senddelay=0):
+
+##ibusjms.topic.qos=DISPATCH(threadPerChannel=1,highmark=20,lowmark=5):FRAG:FIFO:NAK(epochsz=10,retrinterval=2000):REACH(hbeat=2000):BOOT:IPMCAST(interface=192.168.1.8,sendbuffersize=65536,receivebuffersize=65536):
+
+##ibusjms.topic.qos=DISPATCH(threadPerChannel=1,highmark=10):FRAG:FIFO:NAK:REACH:BOOT:IPMCAST(interface=192.168.1.8,sendbuffersize=65536,receivebuffersize=65536):
+
+##      ibusjms.topic.disableMessageID
+##      ibusjms.queue.disableMessageID
+##      ------------------------------
+##      TYPE:   Boolean
+##      VALUE:  True or False (default)
+##      DESCRIPTION:
+##      Suppresses setting the message ID in published messages for a probably
+##      minute performance gain.
+
+ibusjms.topic.disableMessageTimestamp=true
+##      ibusjms.topic.disableMessageTimestamp
+##      ibusjms.queue.disableMessageTimestamp
+##      ------------------------------
+##      TYPE:   Boolean
+##      VALUE:  True or false (default)
+##      DESCRIPTION:
+##      Suppresses setting the time produced in published messages for a probably
+##      minute performance gain.
+
+ibusjms.topic.consumerQueueEntriesSize=10000
+##      ibusjms.queue.consumerQueueEntriesSize
+##      ------------------------------
+##      TYPE:   Integer
+##      VALUE:  Positive integer, default 100.
+##      DESCRIPTION:
+##      Number of messages accepted before invoking flow control to ask
+##      the iBus//MessageServer to stop sending more on this destination,
+##      or to stop accepting more in iBus//MessageBus.
+##      See Programmer's Manual for details.
+
+##      ibusjms.topic.consumerQueueBytesSize
+##      ibusjms.queue.consumerQueueBytesSize
+##      ------------------------------
+##      TYPE:   Integer
+##      VALUE:  Positive integer, default 250000.
+##      DESCRIPTION:
+##      Memory size (in bytes) of a queue before invoking flow control to ask
+##      the iBus//MessageServer to stop sending more on this destination,
+##      or to stop accepting more in iBus//MessageBus.
+##      See Programmer's Manual for details.

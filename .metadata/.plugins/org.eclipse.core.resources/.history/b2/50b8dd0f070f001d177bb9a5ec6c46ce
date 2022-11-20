@@ -1,0 +1,559 @@
+/**
+ * TPublisher.java
+ *
+ * @author Copyright (c) 2003 by Tacpoint Technologie, Inc.
+ *    All rights reserved.
+ * @version 1.0
+ * Created on Sep 16, 2003
+ */
+package com.tacpoint.publisher;
+
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.channels.SocketChannel;
+import java.util.Vector;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.exolab.castor.xml.Unmarshaller;
+
+import EDU.oswego.cs.dl.util.concurrent.ConcurrentHashMap;
+import EDU.oswego.cs.dl.util.concurrent.PooledExecutor;
+
+import com.tacpoint.jms.MessageHandler;
+import com.tacpoint.jms.MessageReducer;
+import com.tacpoint.jms.ReducedMessageInflator;
+import com.tacpoint.jms.TConsumer;
+
+public final class TPublisher
+{
+   private static Log log = LogFactory.getLog(TPublisher.class);
+   private static final String PROPERTY_FILE_NAME = "/publisherconfig.xml";
+   private static final int DEFAULT_PUBLISH_THREAD_POOL_COUNT = 10;
+
+   private static long socketKey = 0;
+   private static long socketCount = 0;
+
+   private TPublisherConfigBean configbean;
+   private ConcurrentHashMap topics;  // thread-safe. no manual sync required
+   private PooledExecutor publishPool;
+
+   TDispatcher dispatcher;
+   TMessageQueue messageQueue = new TMessageQueue();
+
+   //
+   // for use with basic auth requirement
+   //
+   String authUserName;
+   String authPassword;
+   boolean requiresAuthentication;
+
+   public String getAuthUserName() {
+      return authUserName;
+   }
+
+   public String getAuthPassword() {
+      return authPassword;
+   }
+
+   public boolean requiresAuthentication() {
+      return requiresAuthentication;
+   }
+
+   //
+   // this map instance is declared public for the sake of performance ... clients access it
+   // directly from anywhere in the classloader.
+   //
+   private static ConcurrentHashMap channelsMap;
+
+   public static synchronized long getSocketKey() {
+      return --socketKey;
+   }
+
+   public static synchronized void incrementSocketCount() {
+      socketCount++;
+   }
+
+   public static synchronized void decrementSocketCount() {
+      socketCount--;
+   }
+
+   public static long getSocketCount() {
+      return socketCount;
+   }
+
+   public TPublisher()
+   {
+      log.debug("TPublisher.constructor()");
+
+      try
+      {
+    	//  System.out.println("aman");
+         InputStream infile = getClass().getResourceAsStream(PROPERTY_FILE_NAME);
+        // System.out.println("aman1");
+
+         // read in application configuration
+         if (configbean == null) {
+         configbean = (TPublisherConfigBean)
+        //		 System.out.println("aman3");
+            Unmarshaller.unmarshal(TPublisherConfigBean.class,
+            new InputStreamReader(infile));
+     //    System.out.println("aman3");
+
+         log.debug("TPublisher.properties.push-port = " + configbean.getPushPort());
+         log.debug("TPublisher.properties.accept-thread-pool-count = " + configbean.getAcceptThreadPoolCount());
+         log.debug("TPublisher.properties.run-jms-consumer = " + configbean.getRunJmsConsumer());
+
+         log.debug("TPublisher.properties.udp-ttl = " + configbean.getUdpTtl());
+
+         Vector vector = configbean.getClientID();
+         for (int i=0; i< vector.size(); i++)
+         {
+            log.debug("TPublisher.properties.clientID = "+vector.get(i));
+         }
+
+         vector = configbean.getPrimaryIP();
+         for (int i=0; i< vector.size(); i++)
+         {
+            log.debug("TPublisher.properties.primaryIP = "+vector.get(i));
+         }
+
+         vector = configbean.getConsumerName();
+         for (int i=0; i< vector.size(); i++)
+         {
+            log.debug("TPublisher.properties.consumer-name = "+vector.get(i));
+         }
+
+         Vector vtopics = configbean.getTopicName();
+         for (int i = 0; i < vtopics.size(); i++)
+         {
+            log.debug("TPublisher.properties.topic-name = " + vtopics.get(i));
+         }
+
+         Vector vqos = configbean.getQos();
+         for (int j = 0; j < vqos.size(); j++)
+         {
+            log.debug("TPublisher.properties.QOS = " + vqos.get(j));
+         }
+
+         Vector vconsumers = configbean.getConsumer();
+         for (int j = 0; j < vconsumers.size(); j++)
+         {
+            log.debug("TPublisher.properties.consumer = " + vconsumers.get(j));
+         }
+
+         Vector vmessageHandlers = configbean.getMessageHandler();
+         for (int j = 0; j < vmessageHandlers.size(); j++)
+         {
+            log.debug("TPublisher.properties.message-handler = " + vmessageHandlers.get(j));
+         }
+
+         Vector vmessageReducers = configbean.getMessageReducer();
+         for (int j = 0; j < vmessageReducers.size(); j++)
+         {
+            log.debug("TPublisher.properties.message-reducer = " + vmessageReducers.get(j));
+         }
+
+         log.debug("TPublisher.properties.authentication-class = " + configbean.getAuthenticationClass());
+         log.debug("TPublisher.properties.heartbeat-topic = " + configbean.getHeartbeatTopic());
+         log.debug("TPublisher.properties.Sheartbeat-topic = " + configbean.getHeartbeat1Topic());
+         System.out.println("hlo aman");
+
+         topics = new ConcurrentHashMap();
+         channelsMap = new ConcurrentHashMap();
+
+         requiresAuthentication = configbean.getRequiresAuthentication();
+         authUserName = configbean.getAuthUserName();
+         authPassword = configbean.getAuthPassword();
+
+         log.debug("TPublisher.properties.requires-authentication = " + configbean.getRequiresAuthentication());
+         log.debug("TPublisher.properties.auth-user-name = " + configbean.getAuthUserName());
+         log.debug("TPublisher.properties.auth-password = " + configbean.getAuthPassword());
+
+      }  else  {
+    	  System.out.println("nullpointerexception");
+      }
+      }
+      catch(Exception e)
+      {
+    	 //   System.out.println("hlo aman5");
+         log.error("TPublisher.constructor() exception - " + e.getMessage(),e);
+      }
+   }
+   
+
+   public TPublisherConfigBean getConfiguration()
+   {
+      return(configbean);
+   }
+
+   public void run()
+   {
+      log.debug("TPublisher.run()");
+      ThreadGroup group = new ThreadGroup("TPublisherThreadGroup");
+      group.setMaxPriority(Thread.MAX_PRIORITY);
+      kickOffHttpd(group);
+      kickOffListeners(group);
+      kickOffHeartbeat(group);
+      log.debug("going to call sheartbeat");
+      kickOffSHeartbeat(group);
+      kickOffMonitorLogger(group);
+
+   }
+
+   public synchronized void unsubscribe(Vector interestedTopics, SocketChannel channel, String userid)
+   {
+      //log.debug("TPublisher.unsubscribe()");
+
+      try
+      {
+         if (interestedTopics != null)
+         {
+            dispatcher.unregister(channel, userid, interestedTopics);
+         }
+      }
+      catch(Exception e)
+      {
+         log.error("TPublisher.unsubscribe() exception - " + e.getMessage(),e);
+      }
+   }
+
+   public synchronized void subscribe(Vector interestedTopics, SocketChannel channel, String userid)
+   {
+      //log.debug("TPublisher.subscribe()");
+
+      try
+      {
+         if (interestedTopics != null)
+         {
+            dispatcher.register(channel, userid, interestedTopics);
+         }
+      }
+      catch(Exception e)
+      {
+         log.error("TPublisher.subscribe() exception - " + e.getMessage(),e);
+      }
+   }
+
+   public synchronized void registerChannel(String userid, SocketChannel channel)
+   {
+      //log.debug("Register channel with user ID : "+userid);
+
+      try
+      {
+         if (userid != null && channel != null)
+            channelsMap.put(userid, channel);
+      }
+      catch(Exception e)
+      {
+         log.error("Register channel  exception - " + e.getMessage(),e);
+      }
+   }
+
+   public static void unregisterChannel(String userid)
+   {
+      //log.debug("Unregister channel with user ID : "+userid);
+
+      try
+      {
+         if (userid != null)
+            channelsMap.remove(userid);
+      }
+      catch(Exception e)
+      {
+         log.error("Unregister channel  exception - " + e.getMessage(),e);
+      }
+   }
+
+
+   public static SocketChannel channelLookup(String userid)
+   {
+      //log.debug("Channel lookup with user ID : "+userid);
+
+      try
+      {
+         if (userid != null)
+           return (SocketChannel) channelsMap.get(userid);
+         return null;
+      }
+      catch(Exception e)
+      {
+         log.error("Channel lookup  exception - " + e.getMessage(),e);
+         return null;
+      }
+   }
+
+   public void publish(String topic, ByteArrayOutputStream baos)
+   {
+      try
+      {
+         if (topic != null && baos != null)
+         {
+
+            TMessage msg = new TMessage();
+            msg.setKey(topic);
+            msg.setBaos(baos);
+            messageQueue.add(msg);
+
+         }
+      }
+      catch(Exception e)
+      {
+         log.error("TPublisher.publish() exception - " + e.getMessage());
+      }
+   }
+
+
+   private void kickOffHttpd(ThreadGroup group)
+   {
+      log.debug("TPublisher.kickOffHttpd()");
+
+      try
+      {
+         TPushHttpd httpd = new TPushHttpd(this);
+         Thread thread = new Thread(group, httpd);
+         thread.setPriority(Thread.MAX_PRIORITY);
+         thread.start();
+      }
+      catch(Exception e)
+      {
+    	 //   System.out.println("hlo aman5");
+           log.error("TPublisher.kickOffHttpd() exception - " + e.getMessage());
+          //  	 e.printStackTrace();
+      }
+   }
+
+   private void kickOffListeners(ThreadGroup group)
+   {
+      log.debug("TPublisher.kickOffListeners()");
+
+      try
+      {
+         Vector vtopics = configbean.getTopicName();
+         Vector vqos = configbean.getQos();
+         Vector vconsumerNames = configbean.getConsumerName();
+         Vector vclientIds = configbean.getClientID();
+         Vector vprimaryIps = configbean.getPrimaryIP();
+         Vector vmessageHandlers = configbean.getMessageHandler();
+         Vector vconsumers = configbean.getConsumer();
+         Vector vmessageReducers = configbean.getMessageReducer();
+
+         if (vtopics.size() == vqos.size() &&
+             vtopics.size() == vconsumerNames.size() &&
+             vtopics.size() == vclientIds.size() &&
+             vtopics.size() == vprimaryIps.size() &&
+             vtopics.size() == vmessageHandlers.size() &&
+             vtopics.size() == vconsumers.size() &&
+             vtopics.size() == vmessageReducers.size())
+         {
+
+            String saClassName = configbean.getSubscriptionAnalyzer();
+            Runnable saRunnable = null;
+
+            if ( saClassName != null && (saClassName.equalsIgnoreCase("null")==false) ) {
+               log.debug("About to create subscription analyzer instance of type : "+saClassName);
+               saRunnable = (Runnable)Class.forName(saClassName).newInstance();
+            }
+
+            String udpClassName = configbean.getUdpHandler();
+            Runnable udpRunnable = null;
+
+            if ( udpClassName != null && (udpClassName.equalsIgnoreCase("null")==false) ) {
+               log.debug("About to create udp handler instance of type : "+udpClassName);
+               udpRunnable = (Runnable)Class.forName(udpClassName).newInstance();
+            }
+
+            dispatcher = new TDispatcher(this, configbean.getSelectorThreadCount(), saRunnable, udpRunnable, 
+                                         configbean.getSelectorClassName());
+
+            dispatcher.setMessageQueue(messageQueue);
+
+            if (configbean.getRunJmsConsumer() == true) {
+               for (int i = 0; i < vtopics.size(); i++)
+               {
+                  // get message handler class and instantiate ...
+                  String className = (String)vconsumers.get(i);
+
+                  TConsumer consumer = null;
+
+                  if ( className != null && (className.equalsIgnoreCase("null")==false) ) {
+                     log.debug("About to create consumer instance of type: :"+className);
+                     consumer = (TConsumer)Class.forName(className).newInstance();
+                  }
+                  else {
+                     log.debug("No consumer instance declared in config file - "+
+                               "defaulting to QueuedJMSMessageConsumer.");
+                     consumer = new com.tacpoint.jms.QueuedJMSMessageConsumer();
+                  }
+
+                  consumer.setMessageQueue(messageQueue);
+                  consumer.setAggregationTime(configbean.getAggregationTime());
+                  consumer.setConsumerName(((String)configbean.getConsumerName().get(i)));
+                  consumer.setClientID(((String)configbean.getClientID().get(i)));
+                  consumer.setPrimaryIP(((String)configbean.getPrimaryIP().get(i)));
+                  consumer.setTopicName((String)vtopics.get(i));
+                  consumer.setQOS((String)vqos.get(i));
+
+                  // get message handler class and instantiate ...
+                  className = (String)vmessageHandlers.get(i);
+
+                  if ( className != null && (className.equalsIgnoreCase("null")==false) ) {
+                     log.debug("About to create message handler instance of type: :"+className);
+                     MessageHandler  mh = (MessageHandler)Class.forName(className).newInstance();
+                     consumer.setMessageHandler(mh);
+                  }
+                  else {
+                     log.debug("No message handler being used for this consumer - "+consumer.getConsumerName());
+                  }
+
+                  // get message reducer class and instantiate ...
+                  className = (String)vmessageReducers.get(i);
+
+                  if ( className != null && (className.equalsIgnoreCase("null")==false) ) {
+                     log.debug("About to create message reducer instance of type: :"+className);
+                     MessageReducer  mr = (MessageReducer)Class.forName(className).newInstance();
+                     consumer.setMessageReducer(mr);
+                  }
+                  else {
+                     log.debug("No message reducer being used for this consumer - "+consumer.getConsumerName());
+                  }
+
+                  Thread thread = new Thread(group, (Runnable)consumer);
+                  thread.start();
+               }
+            }
+            else {
+
+               // must be a fan out server ...
+
+               ReducedMessageInflator rmi = null;
+
+               String className = configbean.getMessageInflator();
+               if ( className != null && (className.equalsIgnoreCase("null")==false) ) {
+                  log.debug("About to create message inflator instance of type: :"+className);
+                  rmi = (ReducedMessageInflator)Class.forName(className).newInstance();
+               }
+
+               com.tacpoint.publisher.TFanOut equityFanout = new com.tacpoint.publisher.TFanOut(configbean.getEquityUrl(),
+                                                                                                configbean.getUserId(),
+                                                                                                configbean.getAuthUserName(),
+                                                                                                configbean.getAuthPassword(),
+                                                                                                null,
+                                                                                                messageQueue,
+                                                                                                rmi);
+            }
+
+         }
+         else
+         {
+            log.error("TPublisher.kickOffListeners() - topic name, consumer name, primary ip, secondary ip, client name,  message handler and qos count not the same");
+         }
+      }
+      catch(Exception e)
+      {
+    	 //   System.out.println("hlo aman5");
+         log.error("TPublisher.kickOffListeners() exception - " + e.getMessage(),e);
+      }
+   }
+
+   private void kickOffHeartbeat(ThreadGroup group)
+   {
+      log.debug("TPublisher.kickOffHeartbeat()");
+
+      try
+      {
+         THeartbeat hb = new THeartbeat(this);
+         Thread thread = new Thread(group, hb);
+         thread.setDaemon(true);
+         thread.start();
+      }
+      catch(Exception e)
+      {
+    	  //  System.out.println("hlo aman5");
+         log.error("TPublisher.kickOffHeartbeat() exception - " + e.getMessage());
+      }
+   }
+
+   private void kickOffSHeartbeat(ThreadGroup group)
+   {
+      log.debug("TPublisher.kickOffSHeartbeat()");
+
+      try
+      {
+         TSHeartbeat hb = new TSHeartbeat(this);
+         Thread thread = new Thread(group, hb);
+         thread.setDaemon(true);
+         thread.start();
+      }
+      catch(Exception e)
+      {
+    	  //  System.out.println("hlo aman5");
+         log.error("TPublisher.kickOffSHeartbeat() exception - " + e.getMessage());
+      }
+   }
+   
+   private void kickOffMonitorLogger(ThreadGroup group)
+   {
+      log.debug("TPublisher.kickOffMonitorLogger()");
+
+      try
+      {
+          
+
+         TMonitorLogger ml = new TMonitorLogger(this);
+         Thread thread = new Thread(group, ml);
+        // System.out.println("hlo aman2");
+         thread.setDaemon(true);
+         thread.start();
+      }
+      catch(Exception e)
+      {
+    	 //   System.out.println("hlo aman5");
+         log.error("TPublisher.kickOffMonitorLogger() exception - " + e.getMessage());
+      }
+   }
+
+   public String getMonitorStats()
+   {
+      StringBuffer sb = new StringBuffer();
+
+      sb.append("Number of topics: ");
+      sb.append(String.valueOf(topics.size()));
+      sb.append("\r\n");
+
+      /*
+      for (Enumeration e = topics.elements() ; e.hasMoreElements() ;)
+      {
+         TSubscribers s = (TSubscribers)e.nextElement();
+         sb.append("Topics: ");
+         sb.append(s.getTopicName());
+         sb.append(" | Number of Subscribers: ");
+         sb.append(s.getSubscriberCount());
+         sb.append(" | TOTAL Messages sent: ");
+         sb.append(s.getMessagesSentCount());
+         sb.append("\r\n");
+      }
+      */
+
+      return(sb.toString());
+   }
+
+   public static void main(String[] args)
+   {
+      try
+      { 
+    	  //    System.out.println("hlo aman1");
+
+         TPublisher pub = new TPublisher();
+         pub.run();
+       
+       //  System.out.println("hlo aman5");
+      }
+      catch(Exception e)
+      {
+    	  //  System.out.println("hlo aman5");
+         System.out.println("TPublisher.main() " + e.getMessage());
+      }
+   }
+}

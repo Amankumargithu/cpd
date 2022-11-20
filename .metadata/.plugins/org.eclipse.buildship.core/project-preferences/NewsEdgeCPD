@@ -1,0 +1,12 @@
+#
+#Tue Nov 15 19:02:11 IST 2022
+buildDir=build
+buildScriptPath=build.gradle
+classpath=<?xml version\="1.0" encoding\="UTF-8"?>\n<classpath>\n<classpathentry kind\="lib" path\="C\:/Users/SONY/.gradle/caches/modules-2/files-2.1/com.google.code.gson/gson/2.8.6/9180733b7df8542621dc12e21e87557e8c99b8cb/gson-2.8.6.jar" sourcepath\="C\:/Users/SONY/.gradle/caches/modules-2/files-2.1/com.google.code.gson/gson/2.8.6/1b9adea7bbe0b251818f42fde0bd2988d7e5f20a/gson-2.8.6-sources.jar">\r\n\t<attributes>\r\n\t\t<attribute name\="gradle_used_by_scope" value\=""/>\r\n\t</attributes>\r\n</classpathentry>\r\n<classpathentry kind\="lib" path\="C\:/Users/SONY/.gradle/caches/modules-2/files-2.1/net.sourceforge.javacsv/javacsv/2.0/8092b1ba2d4929f2ec27e58cd240502afdd6a9a7/javacsv-2.0.jar">\r\n\t<attributes>\r\n\t\t<attribute name\="gradle_used_by_scope" value\=""/>\r\n\t</attributes>\r\n</classpathentry>\r\n<classpathentry kind\="lib" path\="C\:/Users/SONY/OneDrive/Desktop/workspace-cpd/NewsEdgeCPD/jars/iBusJMS.jar">\r\n\t<attributes>\r\n\t\t<attribute name\="gradle_used_by_scope" value\=""/>\r\n\t</attributes>\r\n</classpathentry>\r\n<classpathentry kind\="lib" path\="C\:/Users/SONY/OneDrive/Desktop/workspace-cpd/NewsEdgeCPD/jars/mysql-connector-java-5.1.18-bin.jar">\r\n\t<attributes>\r\n\t\t<attribute name\="gradle_used_by_scope" value\=""/>\r\n\t</attributes>\r\n</classpathentry>\r\n</classpath>\n
+derivedResources=.gradle;build
+gradleVersion=6.3
+hasAutoBuildTasks=false
+linkedResources=
+managedBuilders=<?xml version\="1.0" encoding\="UTF-8" standalone\="no"?><commands/>
+managedNatures=
+subprojectPaths=

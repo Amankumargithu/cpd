@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<t-publisher-config-bean xsi:type="java:com.tacpoint.publisher.TPublisherConfigBean" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+   <push-port>8180</push-port>
+   <accept-thread-pool-count>30</accept-thread-pool-count>
+   <selector-thread-count>12</selector-thread-count>
+   <aggregation-time>500</aggregation-time>
+   <equity-url>http://localhost:82/subscribe</equity-url>
+   <option-url>http://localhost:82/subscribe</option-url>
+   <run-jms-consumer>true</run-jms-consumer>
+   <user-id>777787</user-id>
+   <requires-authentication>false</requires-authentication>
+   <auth-user-name>streamer</auth-user-name>
+   <auth-password>str3amer!</auth-password>
+
+
+   <streamer-class-name>com.b4utrade.network.CompressedLZWEquityStreamer</streamer-class-name>
+   <streamer-id>optstreamer1</streamer-id>
+   <subscription-analyzer>com.b4utrade.subscription.OptionSubscriptionAnalyzer</subscription-analyzer>
+   <options-jndi-address>cpd-options-bbo-1.quodd.private</options-jndi-address>
+   <futures-jndi-address>cpd-futures.quodd.private</futures-jndi-address>
+
+
+<!-- OPTIONS -->
+   <client-iD xsi:type="java:java.lang.String" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">optionsConsumers1</client-iD>
+   <primary-iP xsi:type="java:java.lang.String" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">10.100.113.186</primary-iP>
+   <consumer xsi:type="java:java.lang.String" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">com.tacpoint.jms.QueuedJMSMessageConsumer</consumer>
+   <consumer-name xsi:type="java:java.lang.String" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">optionsS1</consumer-name>
+   <topic-name xsi:type="java:java.lang.String" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">/qhwt053/options</topic-name> 
+   <qos xsi:type="java:java.lang.String" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">DISPATCH(throttling=0,threadPerChannel=1,highmark=10):IPMCAST(interface=?,sendbuffersize=65536,receivebuffersize=10000000,senddelay=0)</qos>
+   <message-handler xsi:type="java:java.lang.String" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">null</message-handler>
+   <message-reducer xsi:type="java:java.lang.String" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">com.b4utrade.network.EquityQTMessageReducer</message-reducer>
+
+   <authentication-class>com.tacpoint.publisher.authenticator</authentication-class>
+   <heartbeat-topic>.TIME_OP</heartbeat-topic>
+   <heartbeat-interval-in-seconds>1</heartbeat-interval-in-seconds>
+   <heartbeat-message>T:.TIME_OP|</heartbeat-message>
+
+
+   <!-- offset to EST in millis -->
+   <est-offset>0</est-offset>
+
+   <selector-class-name>com.tacpoint.publisher.TLZWCompressedSelector</selector-class-name>
+
+</t-publisher-config-bean>

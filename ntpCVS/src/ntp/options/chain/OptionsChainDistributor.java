@@ -1,0 +1,235 @@
+package ntp.options.chain;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.Statement;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.HashMap;
+
+import ntp.logger.NTPLogger;
+import ntp.util.CPDProperty;
+import ntp.util.MySQLDBManager;
+
+import com.csvreader.CsvReader;
+
+public class OptionsChainDistributor {
+
+	private static HashMap<String, String> underlyerMap = new HashMap<>();
+	private static HashMap<String, String> mappingMonth = new HashMap<>();
+	private static SimpleDateFormat formatter = new SimpleDateFormat("ddMMyy");
+	private static SimpleDateFormat dateformatter = new SimpleDateFormat("yyyyMMdd");
+	private static SimpleDateFormat timeFormatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
+	private static Date currentDate = new Date();
+	private static Connection aConnection = null;
+	private static PreparedStatement prestmt = null;
+
+	static {
+		mappingMonth.put("A", "01"); // call month jan
+		mappingMonth.put("B", "02");
+		mappingMonth.put("C", "03");
+		mappingMonth.put("D", "04");
+		mappingMonth.put("E", "05");
+		mappingMonth.put("F", "06");
+		mappingMonth.put("G", "07");
+		mappingMonth.put("H", "08");
+		mappingMonth.put("I", "09");
+		mappingMonth.put("J", "10");
+		mappingMonth.put("K", "11");
+		mappingMonth.put("L", "12");
+		mappingMonth.put("M", "01"); // put month jan ... so on
+		mappingMonth.put("N", "02");
+		mappingMonth.put("O", "03");
+		mappingMonth.put("P", "04");
+		mappingMonth.put("Q", "05");
+		mappingMonth.put("R", "06");
+		mappingMonth.put("S", "07");
+		mappingMonth.put("T", "08");
+		mappingMonth.put("U", "09");
+		mappingMonth.put("V", "10");
+		mappingMonth.put("W", "11");
+		mappingMonth.put("X", "12");
+	}
+
+	public static void main(String[] args) {
+		try {
+			HashMap<String, Long> preTradeMap = new HashMap<>();
+			HashMap<String, Long> preVolMap = new HashMap<>();
+			String currentDateStr = dateformatter.format(new Date());
+			CPDProperty prop = CPDProperty.getInstance();
+			String fileDirectory = prop.getProperty("FILE_DIRECTORY");
+			if (fileDirectory == null) {
+				NTPLogger.missingProperty("FILE_DIRECTORY");
+				fileDirectory = "/home/opChain/files";
+				NTPLogger.defaultSetting("FILE_DIRECTORY", fileDirectory);
+			}
+			String optionsFile = fileDirectory + "/OptionChain_" + currentDateStr + ".csv";
+			String propOptionsFile = prop.getProperty("OPTIONS_DATA_FILE");
+			if (propOptionsFile != null) {
+				optionsFile = propOptionsFile;
+				NTPLogger.warning("Property file Override Option Chain file to " + propOptionsFile);
+			}
+
+			String preFileDirectory = prop.getProperty("PRE_FILE_DIRECTORY");
+			if (preFileDirectory == null) {
+				NTPLogger.missingProperty("PRE_FILE_DIRECTORY");
+				preFileDirectory = "/home/opChain/files";
+				NTPLogger.defaultSetting("PRE_FILE_DIRECTORY", preFileDirectory);
+			}
+			String preOptionsFile = preFileDirectory + "/OptionChain_" + currentDateStr + ".csv";
+			String propPreOptionsFile = prop.getProperty("PRE_OPTIONS_DATA_FILE");
+			if (propPreOptionsFile != null) {
+				preOptionsFile = propPreOptionsFile;
+				NTPLogger.warning("Property file Override Pre Option Chain file to " + propPreOptionsFile);
+			}
+			String underLyerFile = fileDirectory + "/underlyers.opt_" + currentDateStr;
+			String propUnderLyerFile = prop.getProperty("UNDERLYER_FILE");
+			if (propUnderLyerFile != null) {
+				underLyerFile = propUnderLyerFile;
+				NTPLogger.warning("Property file Override Underlyer file to " + propUnderLyerFile);
+			}
+			String recordDate = prop.getProperty("RECORD_DATE");
+			if (recordDate == null) {
+				NTPLogger.missingProperty("RECORD_DATE");
+				recordDate = dateformatter.format(currentDate);
+				currentDate = dateformatter.parse(recordDate);
+				NTPLogger.defaultSetting("RECORD_DATE", recordDate);
+			} else {
+				currentDate = dateformatter.parse(recordDate);
+			}
+			CsvReader underlyerReader = new CsvReader(underLyerFile);
+			while (underlyerReader.readRecord())
+				underlyerMap.put(underlyerReader.get(0), underlyerReader.get(1));
+			underlyerReader.close();
+			NTPLogger.info("Total underlyers: " + underlyerMap.size());
+			aConnection = MySQLDBManager.getConnection();
+			Statement stmt = aConnection.createStatement();
+			try {
+				NTPLogger.info("Dropping Index OPTIONS_CHAIN.UNDERLYER_INDEX start");
+				stmt.executeUpdate("ALTER TABLE OPTIONS_CHAIN DROP INDEX UNDERLYER_INDEX");
+				NTPLogger.info("Dropping Index OPTIONS_CHAIN.UNDERLYER_INDEX end");
+			} catch (Exception e) {
+				NTPLogger.error("Cannot drop UNDERLYER_INDEX");
+				e.printStackTrace();
+			}
+			try {
+				NTPLogger.info("Dropping Index OPTIONS_CHAIN.RECORD_DATE_INDEX start");
+				stmt.executeUpdate("ALTER TABLE OPTIONS_CHAIN DROP INDEX RECORD_DATE_INDEX");
+				NTPLogger.info("Dropping Index OPTIONS_CHAIN.RECORD_DATE_INDEX end");
+			} catch (Exception e) {
+				NTPLogger.error("Cannot drop RECORD_DATE_INDEX");
+				e.printStackTrace();
+			}
+			CsvReader preOptionsReader = new CsvReader(preOptionsFile);
+			preOptionsReader.readHeaders();
+			while (preOptionsReader.readRecord()) {
+				try {
+					String opTick = preOptionsReader.get(0);
+					if (!opTick.startsWith("P:"))
+						continue;
+					if (opTick.contains("/"))
+						continue;
+					opTick = opTick.replace("P:", "O:");
+					Long nTrd = Long.parseLong(preOptionsReader.get(1));
+					Long vol = Long.parseLong(preOptionsReader.get(2));
+					if (nTrd != null && nTrd != 0 && vol != null && vol != 0) {
+						System.out.println("ADD " + opTick);
+						preTradeMap.put(opTick, nTrd);
+						preVolMap.put(opTick, vol);
+					}
+				} catch (Exception e) {
+				}
+			}
+			preOptionsReader.close();
+			prestmt = aConnection.prepareStatement(
+					"INSERT INTO OPTIONS_CHAIN (TICKER, UNDERLYER, NUMBER_TRADES, VOLUME, TRADE_TIME, RECORD_DATE ) VALUES (?,?,?,?,?,?)");
+			CsvReader optionsReader = new CsvReader(optionsFile);
+			optionsReader.readHeaders();
+			while (optionsReader.readRecord()) {
+				String opTick = optionsReader.get(0);
+				if (!opTick.startsWith("O:"))
+					continue;
+				if (opTick.contains("/"))
+					continue;
+				String nTrd = optionsReader.get(1);
+				String vol = optionsReader.get(2);
+				String time = optionsReader.get(3);
+				String[] arr = opTick.split("\\\\");
+				Date dt = null;
+				try {
+					dt = timeFormatter.parse(time);
+				} catch (Exception e) {
+					dt = null;
+				}
+				long t = dt == null ? 0 : dt.getTime();
+				java.sql.Timestamp timestamp = new java.sql.Timestamp(t);
+				if (validateOptionTicker(arr[1])) {
+					String root = arr[0].substring(2);
+					String underlyer = underlyerMap.get(root);
+					if (underlyer == null) {
+						NTPLogger.warning("No underlyer for " + root);
+						underlyer = root;
+					}
+					long preVol = 0;
+					long preTrd = 0;
+					if (preTradeMap.containsKey(opTick)) {
+						preTrd = preTradeMap.get(opTick);
+						preVol = preVolMap.get(opTick);
+						System.out.println("PRE " + opTick + " " + preTrd + " " + preVol);
+					}
+					prestmt.setString(1, opTick);
+					prestmt.setString(2, underlyer);
+					prestmt.setLong(3, Long.parseLong(nTrd) + preTrd);
+					prestmt.setLong(4, Long.parseLong(vol) + preVol);
+					prestmt.setTimestamp(5, timestamp);
+					prestmt.setString(6, recordDate);
+					prestmt.execute();
+				} else
+					NTPLogger.dropSymbol(opTick, "Already Expired");
+				;
+			}
+			try {
+				NTPLogger.info("Create Index OPTIONS_CHAIN.RECORD_DATE_INDEX start");
+				stmt.executeUpdate("CREATE INDEX RECORD_DATE_INDEX ON OPTIONS_CHAIN(RECORD_DATE)");
+				NTPLogger.info("Create Index OPTIONS_CHAIN.RECORD_DATE_INDEX end");
+			} catch (Exception e) {
+				NTPLogger.error("Cannot create RECORD_DATE_INDEX");
+				e.printStackTrace();
+			}
+			try {
+				NTPLogger.info("Create Index OPTIONS_CHAIN.UNDERLYER_INDEX start");
+				stmt.executeUpdate("CREATE INDEX UNDERLYER_INDEX ON OPTIONS_CHAIN(UNDERLYER)");
+				NTPLogger.info("Create Index OPTIONS_CHAIN.UNDERLYER_INDEX end");
+			} catch (Exception e) {
+				NTPLogger.error("Cannot create UNDERLYER_INDEX");
+				e.printStackTrace();
+			}
+			optionsReader.close();
+			prestmt.close();
+			MySQLDBManager.closeConnection();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		NTPLogger.info("Process Completed");
+	}
+
+	private static boolean validateOptionTicker(String dateTime) {
+		try {
+			String year = dateTime.substring(0, 2);
+			char month = dateTime.charAt(2);
+			String mon = mappingMonth.get("" + month);
+			String date = dateTime.substring(3);
+			String expireDate = date + mon + year;
+			Date expired = formatter.parse(expireDate);
+			if (expired.after(currentDate))
+				return true;
+			else if (expired.before(currentDate))
+				return false;
+			else
+				return true;
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return false;
+	}
+}

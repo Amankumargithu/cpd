@@ -1,0 +1,281 @@
+/******************************************************************************
+*
+*  GetTrade.java
+*     Dump TSQ Trades
+*
+*  REVISION HISTORY:
+*     21 FEB 2014 jcs  Created.
+*
+*  (c) 2011-2014 Quodd Financial
+*******************************************************************************/
+package com.quodd.examples;
+
+import java.io.*;
+import QuoddFeed.MD.*;
+import java.util.*;
+import QuoddFeed.msg.*;
+import QuoddFeed.util.*;
+
+
+/////////////////////////////////////////////////////////////////
+//
+//                c l a s s   G e t T r a d e
+//
+/////////////////////////////////////////////////////////////////
+class GetTrade
+{
+   private boolean                 _bCSV;
+   private String                  _undef;
+   private PrintStream             cout;
+   private HashMap<String, String> _edb;
+
+   //////////////////////
+   // Constructor
+   //////////////////////
+   GetTrade( String tkr, String t0, String t1, boolean bCSV )
+   {
+      _bCSV  = bCSV;
+      _undef = " ";
+      cout   = System.out;
+      _edb   = new HashMap<String,String>();
+      _edb.put( "XASE", "A" );
+      _edb.put( "XBOS", "B" );
+      _edb.put( "XCIS", "C" );
+      _edb.put( "XADF", "D" );
+      _edb.put( "FINY", "d" );
+      _edb.put( "XISE", "I" );
+      _edb.put( "EDGA", "J" );
+      _edb.put( "EDGX", "K" );
+      _edb.put( "XCHI", "M" );
+      _edb.put( "XNYS", "N" );
+      _edb.put( "ARCX", "P" );
+      _edb.put( "XNAS", "T" );
+      _edb.put( "CBSX", "W" );
+      _edb.put( "XPHL", "X" );
+      _edb.put( "BATY", "Y" );
+      _edb.put( "BATS", "Z" );
+      _edb.put( "XOTC", "BB" );
+      _edb.put( "OOTC", "OB" );
+      _edb.put( "OTCB", "QB" );
+      _edb.put( "OTCQ", "QX" );
+      _edb.put( "PINX", "PK" );
+      _edb.put( "PSGM", "GM" );
+      _edb.put( "XTSE", "TO" );
+      _edb.put( "XTSX", "TV" );
+      _edb.put( "FINN", "D1" );
+      _edb.put( "FINR", "D2" );
+      Parse( tkr, t0, t1 );
+   }
+
+   //////////////////////
+   // Workhorse
+   //////////////////////
+   private void Parse( String tkr, String t0, String t1 )
+   {
+      QuoddFeed.MD.TSQ qry;
+      QuoddMsg[]       mdb;
+      QuoddMsg         qm;
+      EQTrade          et;
+      EQQuote          eq;
+      EQBbo            eb, bb;
+      String           flg, fltr;
+      int              i, nq, nt, tot;
+      long             d0, dd;
+      char             mt, mt2;
+
+      // Canned TSQ response (for now)
+
+      bb   = new EQBbo();
+      d0   = System.currentTimeMillis();
+      fltr = "ALL";
+      if ( _bCSV ) {
+         cout.printf( "Time,Tkr,RTL,MktCtr,Last,LTV,Net,PctChg,Volume,VWAP," );
+         cout.printf( "EligFlags,RptType,RptDetail,RptFlags," );
+         cout.printf( "Bid,Ask,BidSize,AskSize,BidMktCtr,AskMktCtr,\n" );
+      }
+      qry  = new QuoddFeed.MD.TSQ( tkr, tBeg, tEnd, fltr );
+      mdb  = qry.Query();
+      qry.Stop();
+      tot  = mdb.length;
+      for ( i=nt=nq=0; i<tot; i++ ) {
+         qm  = mdb[i];
+         mt  = qm.mt();
+         mt2 = qm.mtSub();
+         if ( mt != MsgTypes._mtEQUITY )
+            continue; // for-i
+         switch( mt2 ) {
+            case MsgTypes._eqSubQTESHORT:
+            case MsgTypes._eqSubQTELONG:
+               eq            = (EQQuote)qm;
+               bb._bid       = eq._bid;
+               bb._ask       = eq._ask;
+               bb._bidSize   = eq._bidSize;
+               bb._askSize   = eq._askSize;
+               bb._bidMktCtr = eq._mktCtr;
+               bb._askMktCtr = eq._mktCtr;
+               nq           += 1;
+               break;   
+            case MsgTypes._eqSubBBOSHORT:
+            case MsgTypes._eqSubBBOLONG:
+               eb  = (EQBbo)qm;
+               bb  = eb.clone();
+               nq += 1;
+               break;   
+            case MsgTypes._eqSubTRDSHORT:
+            case MsgTypes._eqSubTRDLONG:
+            case MsgTypes._eqSubSUMMARY:
+            case MsgTypes._eqSubMKTCTRSUMM:
+               et   = (EQTrade)qm;
+               nt  += 1;
+               if ( _bCSV )
+                  SpitCSV( tkr, et, bb );
+               else
+                  SpitSQL( tkr, et, bb );
+               break;
+         }
+      }
+      dd = System.currentTimeMillis() - d0;
+      System.out.printf( "%d,%d of %d in %d millis\n", nq, nt, tot, dd );
+   }
+
+   //////////////////////
+   // Helpers
+   //////////////////////
+   private void SpitCSV( String tkr, EQTrade t, EQBbo q )
+   {
+      String tsq, pt, flg;
+
+      // Comma-Separated List
+
+      pt   = t.pTimeMs().replace("[","").replace("]","");
+      tsq  = "";
+      tsq += tsq.format( "%s,%s,%d,", pt, tkr, t.RTL() );
+      tsq += tsq.format( "%s,", t._mktCtr );
+      tsq += tsq.format( "%.2f,", t._trdPrc );
+      tsq += tsq.format( "%d,",  t._trdVol );
+      tsq += tsq.format( "%.2f,", t._netChg );
+      tsq += tsq.format( "%.2f,", t._pctChg );
+      tsq += tsq.format( "%d,", t._acVol );
+      tsq += tsq.format( "%.4f,", t._vwap );
+      flg  = "";
+      flg += flg.format( "%x,", t._eligFlags );
+      flg += flg.format( "%x,", t._rptType );
+      flg += flg.format( "%x,", t._rptDetail );
+      flg += flg.format( "%x,", t._rptFlags );
+      tsq += flg;
+      tsq += tsq.format( "%.2f,%.2f,", q._bid, q._ask );
+      tsq += tsq.format( "%d,%d,", q._bidSize, q._askSize );
+      tsq += tsq.format( "%s,%s,", q._bidMktCtr, q._askMktCtr );
+      cout.printf( "%s\n", tsq );
+   }
+
+   private void SpitSQL( String tkr, EQTrade t, EQBbo q )
+   {
+      String tsq, pt, flg;
+      String pTrd, pBid, pAsk;
+      long   lDt, pxl, qTkr, vwap;
+      char   ch;
+      int    i, sz;
+
+      // EFM -> 697077
+
+      tkr = tkr.replace( "/D","" ); // Boris request
+      sz  = tkr.length();
+      for ( i=0,qTkr=0; i<sz; i++ ) {
+         qTkr *= 100;
+         ch    = tkr.charAt( i );
+         qTkr += (int)ch;
+      }
+
+      // Hard-coded
+
+      pxl  = 0; // MSG_SEQUENCE
+      vwap = 1;
+      lDt  = 180214;
+      /*
+       * INSERT into TSQ_DAY_0_9_T VALUES 
+       *    ( TICKER, 
+       *      MSG_SEQUENCE,
+       *      TRADE_SEQUENCE,           # 0
+       *      TRADE_CANCEL_IND,         # 1 if Cxl; 0 Otherwise
+       *      TRADE_QUOTE_TYPE,         # 0 
+       *      INCL_IN_VWAP,             # 1
+       *      TRADE_QUOTE_COND_CODE1,   # Elig.RptDetail.RptFlags.RptType
+       *      TRADE_QUOTE_TIME,         # HHMMSSmmm; No leading 0
+       *      DATE_CREATED,             # 180214
+       *      TRADE_PRICE,
+       *      VWAP,
+       *      TRADE_SIZE,
+       *      VOLUME,
+       *      BID_PRICE,
+       *      ASK_PRICE,
+       *      BID_SIZE,
+       *      ASK_SIZE,
+       *      TRADE_ID,                 # EQTrade._trdID
+       *      TRADE_ID,
+       *      TRADE_MARKET_CENTER,      # From lookup 
+       *      BID_MARKET_CENTER,
+       *      ASK_MARKET_CENTER,
+       *      RTL );
+       */
+      pt = t.pTimeMs().replace("[","").replace("]","");
+      pt = pt.replace( ":","" ).replace( ".","" ).replaceFirst( "^0","" );
+      tsq  = "";
+      tsq += tsq.format( "\'%s\',%d,%d,%d,", tkr, qTkr, pxl, pxl );
+      tsq += tsq.format( "%d,0,%d,", t.IsCxl() ? 1 : 0, vwap );
+      flg  = "";
+      flg += flg.format( "%x.", t._eligFlags );
+      flg += flg.format( "%x.", t._rptType );
+      flg += flg.format( "%x.", t._rptDetail );
+      flg += flg.format( "%x", t._rptFlags );
+      tsq += tsq.format( "\'%s\',", flg );
+      tsq += tsq.format( "%s,%d,", pt, lDt );
+      tsq += tsq.format( "%.2f,", t._trdPrc );
+      tsq += tsq.format( "%.4f,", t._vwap );
+      tsq += tsq.format( "%d,",  t._trdVol );
+      tsq += tsq.format( "%d,", t._acVol );
+      tsq += tsq.format( "%.2f,%.2f,", q._bid, q._ask );
+      tsq += tsq.format( "%d,%d,", q._bidSize, q._askSize );
+      tsq += tsq.format( "%d,", t._trdID );
+		pTrd = pBid = pAsk = _undef;
+		if ( _edb.containsKey( t._mktCtr ) )
+         pTrd = _edb.get( t._mktCtr );
+		if ( _edb.containsKey( q._bidMktCtr ) )
+         pBid = _edb.get( q._bidMktCtr );
+		if ( _edb.containsKey( q._askMktCtr ) )
+         pAsk = _edb.get( q._askMktCtr );
+      tsq += tsq.format( "\'%s\',", pTrd );
+      tsq += tsq.format( "\'%s\',", pBid );
+      tsq += tsq.format( "\'%s\',", pAsk );
+      tsq += tsq.format( "%d", t.RTL() );
+      cout.printf( "INSERT into TSQ_UCDATA VALUES ( %s );\n", tsq );
+   }
+
+
+   /////////////////////////
+   //
+   //  main()
+   //
+   /////////////////////////
+   public static void main( String args[] )
+   {
+      int         argc;
+      String      tkr, t0, t1;
+      GetTrade    trd;
+      PrintStream cout;
+
+      // Quick check
+
+      argc = args.length;
+      cout = System.out;
+      if ( ( argc > 0 ) && args[0].equals( "--version" ) ) {
+         cout.printf( "%s\n", QuoddMsg.Version() );
+         return;
+      }
+      tkr = ( argc > 0 ) ? args[0] : "ABCD/D";
+      t0  = ( argc > 1 ) ? args[1] : "20140218 04:00";
+      t1  = ( argc > 2 ) ? args[2] : "20140218 18:00";
+      trd = new GetTrade( tkr, t0, t1, false );
+      cout.printf( "Done!!\n" );
+   }
+}

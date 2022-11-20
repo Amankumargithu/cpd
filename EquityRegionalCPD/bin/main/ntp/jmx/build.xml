@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!-- An Ant build file for sar file
+-->
+
+<project name="B4UTrade JMX SAR Build Script" default="service-sar" basedir=".">
+
+    <property name="basedir"           value="."/>    
+    <property name="build.sar.dir"     value="../../../sar-build"/>
+    <property name="build.classes.dir" value="../../../sar-build/classes"/>
+    <property name="sar.dist.dir"      value="../../../dist"/>
+	<property name="src.dir"      value="../"/>
+
+    <target name="compile">
+    	
+       <delete dir="${build.sar.dir}"/>
+       <delete dir="${build.classes.dir}"/>
+    	
+       <mkdir dir="${build.sar.dir}"/>
+       <mkdir dir="${build.classes.dir}"/>
+    	
+       <javac 	srcdir="${src.dir}"
+              	destdir="${build.classes.dir}"
+            	includes="ntp/jmx/**"
+            	debug="on"
+            	deprecation="on"
+            	optimize="off"
+       >
+       	
+       <classpath path="${classpath}" />       	
+       <include name="ntp/jmx/**" />
+       	
+       </javac>
+    </target>
+
+    <target name="service-sar" depends="compile">
+        
+        <mkdir dir="${build.sar.dir}/META-INF"/>
+        
+    	<copy file="${basedir}/jms-ticker-house-jboss-service.xml" tofile="${build.sar.dir}/META-INF/jboss-service.xml" />
+    	    	        
+    	    			<jar jarfile="${build.sar.dir}/jmsTickerHouse.sar">
+    	    	             <fileset dir="${build.classes.dir}">
+    	    	                <include name="ntp/jmx/TickerHouseInitializer.class" />
+    	    	                <include name="ntp/jmx/TickerHouseInitializerMBean.class" />
+    	    	             </fileset>
+    	    	             <fileset dir="${build.sar.dir}">
+    	    	                <include name="META-INF/jboss-service.xml" />
+    	    	             </fileset>
+    	    	        </jar>
+        
+    </target>   
+    
+
+</project>

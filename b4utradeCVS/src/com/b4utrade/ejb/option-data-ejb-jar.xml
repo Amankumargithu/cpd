@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<ejb-jar>
+     <description>B4UTrade EJB Cache </description>
+     <display-name>B4UTrade EJBs</display-name>
+     <enterprise-beans>
+      
+       <session>
+         <ejb-name>OptionData</ejb-name>
+         <home>com.b4utrade.ejb.OptionDataHome</home>
+         <remote>com.b4utrade.ejb.OptionData</remote>
+         <ejb-class>com.b4utrade.ejb.OptionDataBean</ejb-class>
+         <session-type>Stateless</session-type>
+         <transaction-type>Bean</transaction-type>
+       </session>
+       <session>
+         <ejb-name>OptionSubscriber</ejb-name>
+         <home>com.b4utrade.ejb.OptionSubscriberHome</home>
+         <remote>com.b4utrade.ejb.OptionSubscriber</remote>
+         <ejb-class>com.b4utrade.ejb.OptionSubscriberBean</ejb-class>
+         <session-type>Stateless</session-type>
+         <transaction-type>Bean</transaction-type>
+       </session>
+              
+     </enterprise-beans>
+</ejb-jar>

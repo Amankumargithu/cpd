@@ -1,0 +1,84 @@
+package com.quodd.future;
+
+import static spark.Spark.after;
+import static spark.Spark.get;
+import static spark.Spark.path;
+import static spark.Spark.port;
+import static spark.Spark.post;
+
+import java.util.HashSet;
+
+import com.google.gson.Gson;
+import com.quodd.ibus.IbusDispatcher;
+import com.quodd.util.CPDProperty;
+
+public class FuturesCPD {
+
+	private final int apiPort;
+	public static final Gson gson = new Gson();
+
+	public FuturesCPD() {
+
+		IbusDispatcher dispacther = new IbusDispatcher();
+		dispacther.startDispatcher("FuturesStreamer", FuturesQTMessageQueue.getInstance().getmQueue());
+		FuturesStreamingController streamingController = FuturesStreamingController.getInstance();
+		streamingController.initChannels();
+
+		FuturesSnapController.getInstance();
+
+		Thread t = new Thread(new Runnable() {
+
+			@Override
+			public void run() {
+				FuturesSnapController snapController = FuturesSnapController.getInstance();
+				HashSet<String> rootSet = snapController.getFuturesRootSymbols();
+				for (String s : rootSet)
+					FuturesMappingSymbolsCache.getInstance().getFuturesChain(s);
+			}
+		}, "FuturesTickerLookUp");
+		t.start();
+
+		FuturesSymbolMappingInitializer mappingInitializer = new FuturesSymbolMappingInitializer();
+		mappingInitializer.mapSymbols();
+
+		String apiPortString = CPDProperty.getInstance().getProperty("API_PORT");
+		if (null == apiPortString) {
+			this.apiPort = 8281;
+		} else {
+			this.apiPort = Integer.parseInt(apiPortString);
+		}
+		System.out.println("APi PORT : " + this.apiPort);
+
+	}
+
+	public static void main(String[] args) {
+		FuturesCPD cpd = new FuturesCPD();
+		cpd.startProcess();
+	}
+
+	private void startProcess() {
+		try {
+			port(this.apiPort);
+			path("/", () -> get("", FutureDataController.healthCheck, gson::toJson));
+			path("/ftrcpd", () -> {
+				get("/chain/base/:ticker", FutureDataController.getFutureChainByBaseSymbol, gson::toJson);
+				get("/chain/desc/:ticker/:pagingIndex/:filterOn", FutureDataController.getFutureChainByDescription,
+						gson::toJson);
+				get("/stockOption/:ticker", FutureDataController.getStockOption, gson::toJson);
+				get("/optionQuote/:ticker", FutureDataController.getOptionQuote, gson::toJson);
+				get("/spotSymbolMap", FutureDataController.getSpotSymbolMap);
+				get("/update", FutureDataController.updateFutureMapping, gson::toJson);
+				post("/subscribe", FutureDataController.subscribe, gson::toJson);
+			});
+			after("*", (request, response) -> {
+				String gzip = request.headers("Content-Encoding");
+				if (gzip != null && "gzip".equalsIgnoreCase(gzip)) {
+					response.header("Content-Encoding", "gzip");
+				}
+				response.type("application/json");
+			});
+		} catch (Exception | Error e) {
+			e.printStackTrace();
+		}
+	}
+}

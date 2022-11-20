@@ -1,0 +1,8 @@
+package unittesting;
+
+public class Testing {
+	public static void display() {
+		System.out.println("hello");
+	}
+
+}

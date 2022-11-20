@@ -1,0 +1,23 @@
+apply plugin: 'java'
+apply plugin: 'eclipse'
+apply plugin: 'java-library-distribution'
+
+sourceCompatibility = 1.8
+version = '1.0'
+jar {
+    manifest {
+        attributes 'Implementation-Title': 'QuoddCommonCPD', 'Implementation-Version': 1.0
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+	compile 'com.sparkjava:spark-core:2.9.3'
+	compile group: 'net.sourceforge.javacsv', name: 'javacsv', version: '2.0'
+	compile group: 'org.slf4j', name: 'slf4j-simple', version: '1.7.36'
+    compile fileTree(dir: 'jars', include: ['*.jar'])
+    compile project(':QuoddCommon')
+}

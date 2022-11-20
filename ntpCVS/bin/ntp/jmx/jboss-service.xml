@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE server>
+
+<!-- ===================================================================== -->
+<!--                                                                       -->
+<!--  JBoss Server Configuration                                           -->
+<!--                                                                       -->
+<!-- ===================================================================== -->
+
+<server>
+
+  <!--
+     | The Classpath element is needed for http based installations
+     | we need to list all the archives that the server needs at boot
+     | if the installation is local and the configuration is from file
+     | then there is no need to list the files and it should commented
+   -->
+
+  <classpath codebase="/usr/jboss-6.0.0/server/default/lib" archives="ntp.jar"/>
+
+  <!-- ==================================================================== -->
+  <!-- AlertInitializer Initialization                                      -->
+  <!-- ==================================================================== -->
+  <mbean code="ntp.jmx.TickerHouseInitializer" name="b4utrade:service=TickerHouseInitializer"/>
+
+</server>

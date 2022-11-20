@@ -1,0 +1,84 @@
+package com.tacpoint.publisher;
+
+import java.util.GregorianCalendar;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
+public class TSHeartbeat implements Runnable {
+	private static Log log = LogFactory.getLog(TSHeartbeat.class);
+
+	private TPublisher publisher;
+
+	private int sleepTime;
+
+	private String topic;
+
+	private String message;
+
+	private int estOffset;
+
+	private java.io.ByteArrayOutputStream baos = null;
+
+	public TSHeartbeat(TPublisher p) {
+		publisher = p;
+		TPublisherConfigBean bean = publisher.getConfiguration();
+		sleepTime = bean.getHeartbeatIntervalInSeconds() * 1000;
+		estOffset = bean.getEstOffset();
+		topic = bean.getHeartbeat1Topic();
+		message = bean.getHeartbeat1Message();
+
+	}
+
+	public void run() {
+
+		GregorianCalendar gc = new GregorianCalendar();
+
+		try {
+
+			while (true) {
+				Thread.sleep(sleepTime);
+				if (publisher != null) {
+					baos = new java.io.ByteArrayOutputStream();
+
+					long now = System.currentTimeMillis();
+					gc.setTimeInMillis(now + estOffset);
+					
+					int hour = gc.get(java.util.Calendar.HOUR);
+					int minute = gc.get(java.util.Calendar.MINUTE);
+					int second = gc.get(java.util.Calendar.SECOND);
+					
+					if(hour==0)
+						hour=12;
+					
+					StringBuffer sb = new StringBuffer();
+					sb.append("L:");	
+					
+					if (hour < 10)
+						sb.append("0");
+					sb.append(String.valueOf(hour));
+					
+					if (minute < 10)
+						sb.append("0");					
+				    sb.append(String.valueOf(minute));
+					
+					if (second < 10)
+						sb.append("0");					
+					sb.append(String.valueOf(second));
+					System.out.println("hlo");
+					
+					baos.write(message.getBytes());
+					baos.write(sb.toString().getBytes());
+					baos.write(com.tacpoint.publisher.TConstants.TERMINATOR_BYTE);
+
+					log.debug("Publishing Sheartbeat msg: "+new String(baos.toByteArray()));
+					publisher.publish(topic, baos);
+				}
+			}
+		} catch (Exception e) {
+			log.error("TSHeartbeat.run() exception " + e.getMessage());
+		}
+
+	}
+
+}

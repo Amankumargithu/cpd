@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<session version="1.0">
+<refactoring comment="Rename resource &apos;ntpCVS1&apos; to &apos;OptionsChainDistributor&apos;" description="Rename resource &apos;ntpCVS1&apos;" flags="7" id="org.eclipse.ltk.core.refactoring.rename.resource" input="/ntpCVS1" name="OptionsChainDistributor" stamp="1655459825666" updateReferences="true"/>
+</session>

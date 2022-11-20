@@ -1,0 +1,135 @@
+/******************************************************************************
+*
+*  Reentrant.java
+
+*     Verify synchronized() is re-entrant
+*
+*  REVISION HISTORY:
+*      8 JUL 2013 jcs  Created.
+*
+*  (c) 2011-2013 Quodd Financial
+*******************************************************************************/
+package com.quodd.tools;
+import java.io.*;
+import java.lang.*;
+import java.util.*;
+
+public class Reentrant implements Runnable
+{
+   private Object      _mtx;
+   private boolean     _bCli;
+   private Object      _ready;
+   private boolean     _bRun;
+   private Thread      _thr;
+   private long        _i;
+   private PrintStream cout;
+
+   /////////////////////
+   // Constructor
+   /////////////////////
+   public Reentrant( Object mtx, boolean bCli )
+   {
+      _mtx   = mtx;
+      _bCli  = bCli;
+      _ready = new Object();
+      _bRun  = true;
+      _thr   = null;
+      cout   = System.out;
+   }
+
+   public void Start()
+   {
+      String err;
+
+      _thr = new Thread( this );
+      _thr.start();
+      try {
+         synchronized( _ready ) {
+            _ready.wait();
+         }
+      } catch( InterruptedException e ) {
+         err = e.getMessage();
+      }
+   }
+
+   public void Stop()
+   {
+      _bRun = false;
+      if ( _thr != null )
+         _thr.interrupt();
+      _thr = null;
+   }
+
+
+   /////////////////////
+   // Runnable Interface
+   /////////////////////
+   public void run()
+   {
+      synchronized( _ready ) {
+         _ready.notify();
+      }
+      if ( _bCli ) 
+         _Client();
+      else
+         _Channel();
+   }
+
+
+   /////////////////////
+   // Helpers
+   /////////////////////
+   private void _Channel()
+   {
+      cout.printf( "Channel running ...\n" );
+      synchronized( _mtx ) {
+         while( _bRun ) {
+            _fcn();
+         }
+      }
+   }
+
+   private void _Client()
+   {
+      cout.printf( "Client running ...\n" );
+      while( _bRun ) {
+         synchronized( _mtx ) {
+            cout.printf( "Got it!!\n" );
+         }
+      }
+   }
+
+   private void _fcn()
+   {   
+      synchronized( this ) { 
+         _i += 1;
+         if ( _i%1000000 == 0 ) 
+            cout.printf( "." );
+      }   
+   }   
+
+   /////////////////////////
+   //
+   //  main()
+   //
+   /////////////////////////
+   public static void main( String args[] )
+   {
+      Object    mtx;
+      Reentrant uc, cli;
+      Scanner   sc;
+
+      mtx = new Object();
+      uc  = new Reentrant( mtx, false );
+      cli = new Reentrant( mtx, true );
+      uc.Start();
+      cli.Start();
+      System.out.printf( "Hit <ENTER> to terminate...\n" );
+      sc = new Scanner( System.in );
+      sc.nextLine();
+      System.out.printf( "\nShutting down ...\n" );
+      uc.Stop();
+      cli.Stop();
+      System.out.printf( "\nDone!!\n" );
+   }
+}

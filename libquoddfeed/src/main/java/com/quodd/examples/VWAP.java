@@ -1,0 +1,139 @@
+/******************************************************************************
+*
+*  VWAP.java
+*     Intra-day VWAP calculator
+*
+*  REVISION HISTORY:
+*     29 MAY 2014 jcs  Created.
+*
+*  (c) 2011-2014 Quodd Financial
+*******************************************************************************/
+package com.quodd.examples;
+
+import java.io.*;
+import java.lang.*;
+import java.util.*;
+import QuoddFeed.msg.*;
+
+
+/////////////////////////////////////////////////////////////////
+//
+//                c l a s s   V W A P
+//
+/////////////////////////////////////////////////////////////////
+class VWAP
+{
+   /////////////////
+   // Instance
+   /////////////////
+   private PrintStream cout   = System.out;
+   private QuoddMsg[]  mdb    = null;
+   private String      _fltr  = "TRADE";
+   private boolean     _bKid  = false;
+   private int         _nRec  = 0x7fffffff;
+   private String      _bboEx = null;    
+
+   //////////////////////
+   // Constructor
+   //////////////////////
+   VWAP( String tkr, String T0, String T1 )
+   {
+      QuoddFeed.MD.TSQ  qry;
+      ArrayList<String> arr;
+      String[]          rdb;
+      QuoddMsg          qm;
+      EQTrade           et;
+      OPTrade           ot;
+      String            pt, wip;
+      int               i, nm, na;
+      char              mt, mt2, tCnd;
+      boolean           bOK;
+      double            prc, num, tnOvr, vwap;
+      long              rtl, vol, acVol;
+
+      cout  = System.out;
+      arr   = new ArrayList<String>();
+      qry   = new QuoddFeed.MD.TSQ( tkr, T0, T1, _fltr, _bKid, _nRec, _bboEx );
+      mdb   = qry.Query();
+      nm    = mdb.length;
+      tnOvr = 0.0;
+      acVol = 0;
+      qry.Stop();
+      for ( i=0; i<nm; i++ ) {
+         qm  = mdb[i];
+         pt  = qm.pTimeMs().replace("[","").replace("]","");
+         mt  = qm.mt();
+         mt2 = qm.mtSub();
+         rtl = qm.RTL();
+         wip = "".format( "%s [%06d] ", pt, rtl );
+         prc = 0.0;
+         vol = 0;
+         bOK = false;
+         switch( mt ) {
+            case MsgTypes._mtEQUITY:
+               switch( mt2 ) {
+                  case MsgTypes._eqSubTRDSHORT:
+                  case MsgTypes._eqSubTRDLONG:
+                  case MsgTypes._eqSubSUMMARY:
+                  case MsgTypes._eqSubMKTCTRSUMM:
+                     et   = (EQTrade)qm;
+                     prc = et._trdPrc;
+                     vol = et._trdVol;
+                     bOK = true;
+                     break;
+               }
+               break;
+            case MsgTypes._mtOPTION:
+               switch( mt2 ) {
+                  case MsgTypes._opSubTRADE:
+                  case MsgTypes._opSubTRDCXL:
+                     ot  = (OPTrade)qm;
+                     prc = ot._trdPrc;
+                     vol = ot._trdVol;
+                     bOK = true;
+                     break; 
+               }
+               break;
+         }
+         if ( bOK ) {
+            wip += wip.format( "%.4f x %d\n", prc, vol );
+            arr.add( wip );
+            tnOvr += ( prc * vol );
+            acVol += vol;
+         }
+      }
+      vwap = ( acVol != 0 ) ? tnOvr / acVol : 0.0;
+      na   = arr.size();
+      rdb  = new String[na];
+      for ( i=0; i<na; rdb[na-(i+1)] = arr.get( i++ ) );
+      wip = Arrays.toString( rdb ).replace( ", ", "" );
+      cout.printf( "%s [%s->%s] : %d trades; VWAP=%.4f; acVol=%d\n", 
+         tkr, T0, T1, nm, vwap, acVol );
+      cout.printf( wip.substring( 1,wip.length()-1 ) ); // [ ... ]
+   }
+
+   /////////////////////////
+   //
+   //  main()
+   //
+   /////////////////////////
+   public static void main( String args[] )
+   {
+      VWAP   tsq;
+      String tkr, t0, t1;
+      int    argc;
+
+      // Quick check
+
+      argc = args.length;
+      if ( ( argc > 0 ) && args[0].equals( "--version" ) ) {
+         System.out.printf( "%s\n", QuoddMsg.Version() );
+         return;
+      }
+      tkr = ( argc > 0 ) ? args[0] : "SPY";
+      t0  = ( argc > 1 ) ? args[1] : "09:30";
+      t1  = ( argc > 2 ) ? args[2] : "09:35";
+      tsq = new VWAP( tkr, t0, t1 );
+      System.out.printf( "Done!!\n" );
+			  }
+}

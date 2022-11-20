@@ -1,0 +1,5 @@
+package com.tacpoint.publisher;
+
+public @interface Nullable {
+
+}

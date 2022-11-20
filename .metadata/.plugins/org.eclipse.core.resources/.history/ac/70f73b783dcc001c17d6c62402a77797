@@ -1,0 +1,19 @@
+package dogstatsd;
+import com.timgroup.statsd.NonBlockingStatsDClientBuilder;
+import com.timgroup.statsd.StatsDClient;
+
+public class stasd {
+
+	public static void main(String[] args) {
+		System.out.println("dogstatsid");
+		
+		// TODO Auto-generated method stub
+		StatsDClient statsd = new NonBlockingStatsDClientBuilder()
+	            .prefix("statsd")
+	            .hostname("localhost")
+	            .port(8125)
+	            .build();
+
+	}
+
+}

@@ -1,0 +1,328 @@
+package ntp.ejb;
+
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.Set;
+
+import javax.ejb.Remote;
+import javax.ejb.Stateless;
+
+import ntp.bean.QTCPDMessageBean;
+import ntp.futureOptions.cache.FutureOptionsMemoryDB;
+import ntp.futureOptions.cache.FutureOptionsQTMessageQueue;
+import ntp.futureOptions.snap.FutureOptionsSnapController;
+import ntp.futureOptions.streamer.FutureOptionsStreamingController;
+import ntp.logger.NTPLogger;
+import ntp.util.DateTimeUtility;
+import ntp.util.FuturesOptionsUtility;
+import QuoddFeed.msg.BlobTable;
+import QuoddFeed.msg.Image;
+
+import com.b4utrade.bean.InterestRateBean;
+import com.b4utrade.bean.StockOptionBean;
+import com.b4utrade.ejb.OptionData;
+
+@Remote(OptionData.class)
+@Stateless(mappedName="ejbCache/OptionData")
+public class FutureOptionsSnapEJB implements OptionData{
+
+	public static final int    OPTION_TYPE_CALL = 1;
+	public static final int    OPTION_TYPE_PUT = 2;
+	private SimpleDateFormat settleDateformatter = new SimpleDateFormat("MMddyyyy");
+		private SimpleDateFormat expirationformatter = new SimpleDateFormat("yyMMdd");
+	private FuturesOptionsUtility utility = FuturesOptionsUtility.getInstance();
+	private Date currentDate = new Date();
+
+
+	@Override
+	public HashMap getOptionChain(String ticker) {
+		NTPLogger.requestEJB("FutOpCh");
+		long s = System.currentTimeMillis();
+		HashMap<String,StockOptionBean> map = new HashMap<String,StockOptionBean>();
+		FutureOptionsQTMessageQueue cache = FutureOptionsQTMessageQueue.getInstance();
+		boolean doReferesh = cache.isMarkedSymbol(ticker);
+		if(!doReferesh)
+		{
+			map = FutureOptionsMemoryDB.getInstance().getOptionChain(ticker);
+			if ( (map != null && map.size() > 0))
+			{
+				long t =System.currentTimeMillis();
+				NTPLogger.responseEJB("FutOpCh", t-s);
+				return map;
+			}
+		}
+		cache.removeMarkedSymbol(ticker);
+		map = new HashMap<String,StockOptionBean>();
+		BlobTable blobTable = FutureOptionsSnapController.getInstance().getOptionChain(ticker);
+		//		System.out.println("CHAIN- " + ticker + " " + blobTable.nRow());
+		try 
+		{
+			if(blobTable != null)
+			{
+				int rowCount = blobTable.nRow();
+				String cDate = settleDateformatter.format(currentDate);
+				currentDate = settleDateformatter.parse(cDate);
+				for (int count = 0; count < rowCount; count++){
+					String optionSymbol = blobTable.GetCell(count, 0);
+					//					System.out.println("CHAIN- " + ticker + " " + optionSymbol);
+					if(optionSymbol.equals(ticker))
+						continue;
+					String[] arr = optionSymbol.split("\\\\");
+					if(arr.length != 3)
+					{
+						NTPLogger.dropSymbol(optionSymbol, "Parsing Error");
+						continue;
+					}
+					StockOptionBean sob = new StockOptionBean();
+					String optionType = optionSymbol.substring(optionSymbol.length() -1);
+					if ((optionType.trim()).equalsIgnoreCase("P"))
+						sob.setOptionType(OPTION_TYPE_PUT);
+					else
+						sob.setOptionType(OPTION_TYPE_CALL);
+					sob.setTicker(optionSymbol);
+					sob.setTickerInDB(optionSymbol);
+					sob.setStrikePrice(Double.parseDouble(arr[2].substring(0, arr[2].length() -1)));
+					sob.setUnderlyingStockTicker(ticker);
+					try
+					{
+						String settleDate = blobTable.GetCell(count, 2);
+						if(settleDate.length() == 7)
+							settleDate = "0" + settleDate;
+						Date expiry = null;
+						try {expiry = settleDateformatter.parse(settleDate);}
+						catch(Exception e)
+						{
+							expiry = expirationformatter.parse(arr[1]);
+							Calendar c = Calendar.getInstance();
+							c.setTime(expiry);
+							c.add(Calendar.MONTH, 1);
+							expiry = c.getTime();
+						}
+						if(expiry.before(currentDate))
+						{
+							NTPLogger.dropSymbol(optionSymbol, "expiration date is wrong " + settleDate);
+							continue;
+						}
+						Calendar c = Calendar.getInstance();
+						c.setTime(expiry);
+						c.set(Calendar.HOUR_OF_DAY, 23);
+						c.set(Calendar.MINUTE, 59);
+						c.set(Calendar.SECOND, 0);
+						c.set(Calendar.MILLISECOND, 0);
+						sob.setExpirationDate(c);
+					}
+					catch(Exception e)
+					{
+						e.printStackTrace();
+					}
+					sob.setSecurityDesc(blobTable.GetCell(count, 1));
+					sob.setOpenInterest(Long.parseLong(blobTable.GetCell(count, 3)));
+					FutureOptionsMemoryDB.getInstance().add(sob);
+					map.put(sob.getTicker(), sob);
+				}
+			}
+		}
+		catch(Exception exception)
+		{
+			exception.printStackTrace();
+		}
+		long t =System.currentTimeMillis();
+		NTPLogger.responseEJB("FutOpCh", t-s);
+		return map;
+	}
+
+	@Override
+	public HashMap getExpirationChain(String ticker) {
+		NTPLogger.requestEJB("FutOpExp");
+		long s = System.currentTimeMillis();
+		HashMap<String, StockOptionBean> conMap = FutureOptionsMemoryDB.getInstance().getExpirationChain(ticker);
+		if(conMap == null )
+			return new HashMap<String, StockOptionBean>();
+		long t =System.currentTimeMillis();
+		NTPLogger.responseEJB("FutOpExp", t-s);
+		return conMap;
+	}
+
+	@Override
+	public InterestRateBean getInterestRate() {
+		return null;
+	}
+
+	@Override
+	public LinkedList getOptionQuote(String optionTickers) {
+		NTPLogger.requestEJB("FutOpSp");
+		long s = System.currentTimeMillis();
+		LinkedList<byte[]> stocks = new LinkedList<byte[]>();
+		FutureOptionsQTMessageQueue cache = FutureOptionsQTMessageQueue.getInstance();
+		try
+		{
+			HashSet<String> resubscribeSet = new HashSet<String>();
+			String [] tickerArray = optionTickers.split(",");
+			for (int j = 0; j < tickerArray.length; j++) {
+				String opTicker = tickerArray[j];
+				if(!utility.validateFutureOptionSymbol(opTicker))
+				{
+					NTPLogger.dropSymbol(opTicker, "Invalid Future Option Symbol");
+					continue;
+				}
+				if(!cache.isIncorrectSymbol(opTicker))
+				{
+					QTCPDMessageBean bean = cache.getSubsData().get(opTicker);
+					if(bean != null)
+						stocks.add(bean.toByteArray());
+					else
+						resubscribeSet.add(opTicker);
+				}
+				else
+					NTPLogger.dropSymbol(opTicker, "Incorrect Future Option Symbol");
+			}
+			FutureOptionsStreamingController.getInstance().addRequestedSymbols(resubscribeSet);
+			if(resubscribeSet.size() >  0)
+			{
+				HashMap<String, Image> images = FutureOptionsSnapController.getInstance().getSyncSnapData(resubscribeSet);
+				Set<String> tickers = images.keySet();
+				for(String ticker: tickers)
+				{
+					QTCPDMessageBean qtMessageBean = new QTCPDMessageBean();
+					Image image = images.get(ticker);
+					if(image != null)
+					{
+						qtMessageBean.setTicker(ticker);
+						qtMessageBean.setSystemTicker(ticker);
+						qtMessageBean.setLastPrice(image._trdPrc);
+						qtMessageBean.setLastTradeVolume(image._trdVol);
+						qtMessageBean.setVolume(image._acVol);
+						qtMessageBean.setDayHigh(image._high);
+						qtMessageBean.setDayLow(image._low);
+						qtMessageBean.setAskPrice(image._ask);
+						qtMessageBean.setAskSize(image._askSize);
+						qtMessageBean.setBidPrice(image._bid);
+						qtMessageBean.setBidSize(image._bidSize);
+						qtMessageBean.setChangePrice(image._netChg);
+						qtMessageBean.setPercentChange(image._pctChg);
+						qtMessageBean.setLastClosedPrice(image._close);
+						qtMessageBean.setOpenPrice(image._open);
+						qtMessageBean.setExchangeId("" + image.protocol());
+						qtMessageBean.setTickUpDown(image._prcTck);
+						DateTimeUtility.getDefaultInstance().processDate(qtMessageBean, image._trdTime);
+					}
+					stocks.add(qtMessageBean.toByteArray());
+				}
+			}
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace();
+		}
+		long t =System.currentTimeMillis();
+		NTPLogger.responseEJB("FutOpSp", t-s);
+		return stocks;
+
+	}
+
+	@Override
+	public StockOptionBean getStockOption(String ticker) {
+		NTPLogger.requestEJB("FutOpFun");
+		long s = System.currentTimeMillis();
+		StockOptionBean bean = null;
+		try
+		{
+			if(!utility.validateFutureOptionSymbol(ticker))
+			{
+				NTPLogger.dropSymbol(ticker, "invalid future option format");
+				return new StockOptionBean();
+			}
+			//			ticker = utility.getEQPlusFormattedTicker(ticker);
+			bean = FutureOptionsMemoryDB.getInstance().getFundamentalBean(ticker);
+			if (bean == null)
+			{
+				bean = new StockOptionBean();
+				Image img = FutureOptionsSnapController.getInstance().getOptionsFundamentalData(ticker);
+				if(img != null)
+				{
+					String expiryDate = "" +  img._settleDate;
+					Date expiry = settleDateformatter.parse(expiryDate);
+					Calendar c = Calendar.getInstance();
+					c.setTime(expiry);
+					c.set(Calendar.HOUR_OF_DAY, 23);
+					c.set(Calendar.MINUTE, 59);
+					c.set(Calendar.SECOND, 0);
+					c.set(Calendar.MILLISECOND, 0);
+					bean.setExpirationDate(c);
+					String type = ticker.substring(ticker.length() -1);
+					if (type.equals("C"))
+						bean.setOptionType(1);
+					else
+						bean.setOptionType(2);
+					bean.setOpenInterest(img._openVol);
+					bean.setSecurityDesc(img.Description());
+					bean.setTicker(ticker);			
+					try{
+						String[] arr = ticker.split("\\\\");
+						bean.setStrikePrice(Double.parseDouble(arr[2].substring(0, arr[2].length() -1)));
+					}
+					catch(Exception e)
+					{
+						NTPLogger.warning("Cannot process future Option Strike - John Issue");
+					}
+					FutureOptionsMemoryDB.getInstance().addStockFundamentalData(ticker, bean);
+				}
+			}
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace();
+		}
+		long t =System.currentTimeMillis();
+		NTPLogger.responseEJB("FutOpFun", t-s);
+		return bean;
+	}
+
+	@Override
+	public HashMap getTSQOptionChain(String rootTicker) {
+		return null;
+	}
+
+	@Override
+	public HashMap getSpotSymbolMap() {
+		// not applicable, to be deleted after futures separation
+		return null;
+	}
+
+	@Override
+	public ArrayList getFutureChainByDescription(String ticker,
+			int pagingIndex, boolean fitlerOn) {
+		// not applicable, to be deleted after futures separation
+		return null;
+	}
+
+	@Override
+	public ArrayList getFutureChainByBaseSymbol(String ticker) {
+		// not applicable, to be deleted after futures separation
+		return null;
+	}
+
+	@Override
+	public String updateFutureMapping(String UITicker, String oldMappedTicker,
+			String mappedTicker) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public void subscribe(String id, Object[] keys) {
+		NTPLogger.requestEJB("FutOpSub");
+		long s = System.currentTimeMillis();
+		HashSet<String> set = new HashSet<>();
+		for(Object o : keys)
+			set.add((String)o);
+		FutureOptionsStreamingController.getInstance().addRequestedSymbols(set);
+		long t =System.currentTimeMillis();
+		NTPLogger.responseEJB("FutOpSub", t-s);
+	}
+}

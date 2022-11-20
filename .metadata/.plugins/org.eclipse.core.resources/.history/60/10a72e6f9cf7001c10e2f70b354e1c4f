@@ -1,0 +1,607 @@
+/******************************************************************************
+*
+*  Subscribe.java
+*     Stream equities
+*
+*  REVISION HISTORY:
+*     13 OCT 2011 jcs  Created.
+*     . . .
+*     15 AUG 2012 jcs  Build 33: No mo OPBbo._bboXxx fields
+*      6 SEP 2012 jcs  Build 35: OPTrade.TradeFlags()
+*     13 NOV 2012 jcs  Build 44: IDXValue.IsETPXxx()
+*      2 DEC 2012 jcs  Build 47: RunTimeStats()
+*      4 JAN 2013 jcs  Build 50: FUTRSumm / FUTRMisc
+*     31 JAN 2013 jcs  Build 51: 2nd constructor
+*     11 MAR 2013 jcs  Build 55: EQBbo.LimitUpDown()
+*     14 MAY 2013 jcs  Build 59: Tracer
+*     18 NOV 2014 jcs  Build 87: _TickersFromFile()
+*      7 MAY 2015 jcs  Build 92: EQTrade._xxx_ext
+*     23 JUN 2015 jcs  Build 94: Dump()
+*
+*  (c) 2011-2015 Quodd Financial
+*******************************************************************************/
+package examples;
+
+import java.io.*;
+import java.util.*;
+import QuoddFeed.msg.*;
+import QuoddFeed.MD.*;
+import QuoddFeed.util.*;
+
+
+/////////////////////////////////////////////////////////////////
+//
+//               c l a s s   S u b s c r i b e
+//
+/////////////////////////////////////////////////////////////////
+
+/**
+ * This example shows you how to open a subscription stream from UltraCache
+ * via the {@link QuoddFeed.util.UltraChan#Subscribe(String,Object)} method
+ * and proces streaming market data via the 
+ * {@link QuoddFeed.util.UltraChan#OnUpdate} callbacks.
+ */
+public class Subscribe extends UltraChan
+{
+   private String[]    _tkrs;
+   private String      _arg;
+   private boolean     _bMsgLog;
+   private boolean     _bMulti;
+   private Level2      _lvl2;
+   private boolean     _bNoIMG;
+   private PrintStream cout;
+   public  boolean     _bSumm; // UC_STATUS
+   public  Object      _mon;
+
+   //////////////////////
+   // Constructor
+   //////////////////////
+   Subscribe( String[] tkrs,
+              boolean  bMsgLog,
+              boolean  bByteLog,
+              boolean  bMulti,
+              Object   mon )
+   {
+      this( UCconfig.Hostname(),
+            UCconfig.Port(),
+            "username",
+            "password",
+            tkrs,
+            bMsgLog,
+            bByteLog,
+            bMulti,
+            mon );
+   }
+
+   Subscribe( String   uHost,
+              int      uPort,
+              String   uUsr,
+              String   uPwd,
+              String[] tkrs,
+              boolean  bMsgLog,
+              boolean  bByteLog,
+              boolean  bMulti,
+              Object   mon )
+   {
+      super( uHost, uPort, uUsr, uPwd, bByteLog );
+      _tkrs    = _TickersFromFile( tkrs );
+      _arg     = "User-defined closure for Subscribe.java";
+      _bMsgLog = bMsgLog;
+      _bMulti  = bMulti;
+      _lvl2    = null;
+      _bNoIMG  = UCconfig.HasKey( "NO_IMAGE" );
+      cout     = System.out;
+      _bSumm   = false;
+      _mon     = mon;
+//      SetRunTimeStats( "./subscribe.stats", 4 );
+   }
+
+
+   //////////////////////
+   // Operations
+   //////////////////////
+   /**
+    * This method subscribes to all tickers.
+    */
+   public void OpenAll()
+   {
+      int i;
+
+      for ( i=0; i<_tkrs.length; i++ ) {
+         if ( _tkrs[i].equals( _ALL_LVL2 ) )
+            SubscribeAllLvl2( _arg );
+         else
+            Subscribe( _tkrs[i], _arg );
+      }
+   }
+
+   /**
+    * This method subscribes to all tickers from a specific exchange.
+    */
+   public void OpenAllExch()
+   {
+      int i;
+
+      for ( i=0; i<_tkrs.length; SubscribeExchange( _tkrs[i++], _arg ) );
+   }
+
+   /**
+    * This method subscribes to all Level 2 tickers.
+    */
+   public void OpenAllLvl2( boolean bL2Only )
+   {
+      int    i, n;
+      double dv = 0.0;
+
+      n = _tkrs.length;
+dv = 86400.0;
+      for ( i=0; i<n; _lvl2 = new Level2( this, _tkrs[i++], 45, dv, bL2Only ) );
+   }
+
+   /**
+    * This method snaps all tickers
+    */
+   public void SnapAll( boolean bSync )
+   {
+      QuoddMsg rtn;
+      long     t0, dd;
+      int      i;
+
+      t0 = System.currentTimeMillis();
+      for ( i=0; i<_tkrs.length; i++ ) {
+         if ( bSync ) {
+            rtn = SyncSnap( _tkrs[i], _arg );
+/* */
+            if ( rtn.mtSub() == _mtSubIMG )
+               OnImage( _tkrs[i], (Image)rtn );
+            else if ( rtn.mt() == _mtDEAD )
+               OnStatus( _tkrs[i], (Status)rtn );
+/* */
+         }
+         else
+            Snap( _tkrs[i], _arg );
+      }
+      dd = System.currentTimeMillis() - t0;
+      if ( bSync )
+         cout.printf( "%d SyncSnap()'s in %dmS\n", i, dd );
+   }
+
+   public void MultiSnap()
+   {
+      QuoddMsg[] res;
+      QuoddMsg   rtn;
+      long       t0, dd;
+      int        i, sz;
+      char       mt, mt2;
+      String     pn;
+
+      // Wait for OnSession() ...
+
+      try {
+         synchronized( _mon ) {
+            _mon.wait();
+         }
+      } catch( InterruptedException e ) {
+         cout.printf( "%s\n", e.getMessage() );
+      }
+
+      // OK to continue ...
+
+      t0  = System.currentTimeMillis();
+      res = SyncMultiSnap( _tkrs, null );
+      dd  = System.currentTimeMillis() - t0;
+      sz  = res.length;
+      cout.printf( "%d MultiSyncSnap()'s in %dmS\n", sz, dd );
+      for ( i=0; i<sz; i++ ) {
+         rtn = res[i];
+         mt  = rtn.mt();
+         mt2 = rtn.mtSub();
+/* */
+         pn    = rtn.getClass().getName();
+         if ( mt2 == _mtSubIMG )
+            OnImage( _tkrs[i], (Image)rtn );
+         else if ( mt == _mtDEAD )
+            OnStatus( _tkrs[i], (Status)rtn );
+/* */
+      }
+   }
+
+
+   //////////////////////
+   // UltraChan Interface
+   //////////////////////
+   /**
+    * Called when we connect to UltraCache.  We do nothing
+    */
+   public void OnConnect()
+   {
+      cout.printf( "CONNECT %s:%d\n", uHost(), uPort() );
+   }
+
+   /**
+    * Called when we disconnect from UltraCache.  We do nothing here.
+    */
+   public void OnDisconnect()
+   {
+      cout.printf( "DISCONNECT %s:%d\n", uHost(), uPort() );
+   }
+
+   /**
+    * Callback invoked when session message is received
+    *
+    * @param txt Textual string
+    * @param bUP true if session is UP
+    */
+   public void OnSession( String txt, boolean bUP )
+   {
+      cout.printf( "OnSession( %s ) = %s\n", txt, bUP ? "UP" : "DOWN" );
+      if ( _bMulti ) {
+         synchronized( _mon ) {
+            _mon.notify();
+         }
+      }
+   }
+
+
+   //////////////////////
+   // IUpdate Interface
+   //////////////////////
+   /**
+    * Called when an unknown QuoddMsg is received.  Should never be called.
+    */
+   public void OnQuoddMsg( String StreamName, QuoddMsg qm )
+   {
+      char mt, mt2;
+
+      // Open Complete?
+
+      if  ( (mt=qm.mt()) == _mtSTREAM_OPN ) {
+         cout.printf( "OpenComplete()\n" );
+         return;
+      }
+
+      // Else something else ...
+
+      if ( _bMsgLog ) {
+         cout.printf( "%s\n", qm.Dump() );
+         mt2 = qm.mtSub();
+         cout.printf( "mt=%c; mtSub=%c; Len=%d\n", qm.mt(), mt2, qm.len() );
+      }
+   }
+
+   /**
+    * Called when a data stream is closed.
+    */
+   public void OnStatus( String StreamName, Status sts )
+   {
+      if ( _bMsgLog )
+         cout.print( sts.Dump() );
+   }
+
+   /**
+    * Called when an UltraCache Tracer msg arrives
+    */
+   public void OnTrace( String StreamName, Tracer trc )
+   {
+      cout.print( trc.Dump() );
+   }
+
+   /**
+    * Called when an UltraCache status update arrives
+    */
+   public void OnStatus( UCStatus sts )
+   {
+      if ( _bMsgLog ) {
+         sts._bSumm = _bSumm;
+         cout.print( sts.Dump() );
+      }
+   }
+
+   /**
+    * Called when an Initial Image is received for a ticker.
+    */
+   public void OnImage( String StreamName, Image img )
+   {
+      if ( !_bNoIMG )
+         cout.print( img.Dump() );
+   }
+
+   /**
+    * Called when an EQBbo update is received for an equity ticker.
+    */
+   public void OnUpdate( String StreamName, EQBbo q )
+   {
+      if ( _bMsgLog )
+         cout.printf( q.Dump() );
+   }
+
+   /**
+    * Called when an EQBboMM update is received for an equity ticker.
+    */
+   public void OnUpdate( String StreamName, EQBboMM q )
+   {
+      if ( _bMsgLog )
+         cout.printf( q.Dump() );
+   }
+
+   /**
+    * Called when an EQQuote update is received for an equity ticker.
+    */
+   public void OnUpdate( String StreamName, EQQuote q )
+   {
+      if ( _bMsgLog )
+         cout.print( q.Dump() );
+   }
+
+   /**
+    * Called when an EQQuoteMM update is received for an equity ticker.
+    */
+   public void OnUpdate( String StreamName, EQQuoteMM q )
+   {
+      if ( _bMsgLog )
+         cout.print( q.Dump() );
+   }
+
+   /**
+    * Called when an EQTrade update is received for an equity ticker.
+    */
+   public void OnUpdate( String StreamName, EQTrade trd )
+   {
+      if ( _bMsgLog )
+         cout.print( trd.Dump() );
+   }
+
+   /**
+    * Called when an EQTradeSts update is received for an equity ticker.
+    */
+   public void OnUpdate( String StreamName, EQTradeSts sts )
+   {
+      if ( _bMsgLog )
+         cout.print( sts.Dump() );
+   }
+
+   /**
+    * Called when an EQMktStats update is received.
+    */
+   public void OnUpdate( String StreamName, EQMktStats st )
+   {
+      if ( _bMsgLog )
+         cout.print( st.Dump() );
+   }
+
+   /**
+    * Called when an EQLimitUpDn update is received.
+    */
+   public void OnUpdate( String StreamName, EQLimitUpDn lim )
+   {
+      if ( _bMsgLog )
+         cout.print( lim.Dump() );
+   }
+
+   /**
+    * Called when an OPQuote update is received for an option ticker.
+    */
+   public void OnUpdate( String StreamName, OPQuote q )
+   {
+      if ( _bMsgLog )
+         cout.print( q.Dump() );
+   }
+
+   /**
+    * Called when an OPBbo update is received for an option ticker.
+    */
+   public void OnUpdate( String StreamName, OPBbo q )
+   {
+      if ( _bMsgLog )
+         cout.print( q.Dump() );
+   }
+
+   /**
+    * Called when an OPTrade update is received for an option ticker.
+    */
+   public void OnUpdate( String StreamName, OPTrade trd )
+   {
+      if ( _bMsgLog )
+         cout.print( trd.Dump() );
+   }
+
+   /**
+    * Called when an IDXValue update is received for an index ticker.
+    */
+   public void OnUpdate( String StreamName, IDXValue ix )
+   {
+      if ( _bMsgLog )
+         cout.print( ix.Dump() );
+   }
+
+   /**
+    * Called when an IDXSummary update is received for an index ticker.
+    */
+   public void OnUpdate( String StreamName, IDXSummary q )
+   {
+      if ( _bMsgLog )
+         cout.print( q.Dump() );
+   }
+
+   /**
+    * Called when FUNDnav message is received
+    */
+   public void OnUpdate( String StreamName, FUNDnav q )
+   {
+      if ( _bMsgLog )
+         cout.printf( q.Dump() );
+   }
+
+   /**
+    * Called when FUTRTrade message is received
+    */
+   public void OnUpdate( String StreamName, FUTRTrade trd )
+   {
+      if ( _bMsgLog )
+         cout.print( trd.Dump() );
+   }
+
+   /**
+    * Called when an Futures Summary is received.
+    */
+   public void OnUpdate( String StreamName, FUTRSumm q )
+   {
+      if ( _bMsgLog )
+         cout.print( q.Dump() );
+   }
+
+   /**
+    * Called when an Futures HiLoLast or OpenInt is received.
+    */
+   public void OnUpdate( String StreamName, FUTRMisc q )
+   {
+      if ( _bMsgLog )
+         cout.print( q.Dump() );
+   }
+
+   /**
+    * Called when FUTRQuote message is received
+    */
+   public void OnUpdate( String StreamName, FUTRQuote qte )
+   {
+      if ( _bMsgLog )
+         cout.print( qte.Dump() );
+   }
+
+   /**
+    * Called when an BONDQuote update is received for an Bond ticker.
+    */
+   public void OnUpdate( String StreamName, BONDQuote q )
+   {
+      if ( _bMsgLog )
+         cout.print( q.Dump() );
+   }
+
+   /**
+    * Called when an BONDTrade update is received for an Bond ticker
+    */
+   public void OnUpdate( String StreamName, BONDTrade trd )
+   {
+      if ( _bMsgLog )
+         cout.print( trd.Dump() );
+   }
+
+   /**
+    * Called when we UltraCache sends us the options chain response formatted
+    * as a BlobList.  We dump to cout.
+    */
+   public void OnBlobList( String exch, BlobList b )
+   {
+      cout.printf( b.Dump() );
+   }
+
+   /**
+    * Called when we UltraCache sends us the options chain response formatted
+    * as a BlobTable.  We dump to cout.
+    */
+   public void OnBlobTable( String exch, BlobTable b )
+   {
+      cout.printf( b.Dump() );
+   }
+
+
+   //////////////////////
+   // Helpers
+   //////////////////////
+   private String[] _TickersFromFile( String[] tkrs )
+   {
+      String[]        rtn;
+      String          line;
+      BufferedReader  buf;
+      HashSet<String> hdb;
+      int             i, n;
+
+      try {
+         buf = new BufferedReader( new FileReader( tkrs[0] ) );
+         hdb = new HashSet<String>();
+         for ( ; (line=buf.readLine()) != null; hdb.add( line ) );
+         buf.close();
+         n   = hdb.size();
+         rtn = new String[n];
+         i   = 0;
+         for ( String tkr : hdb ) 
+            rtn[i++] = tkr;
+      } catch( Exception e ) {
+         rtn = tkrs;
+      }
+      return rtn;
+   }
+
+
+   /////////////////////////
+   //
+   //  main()
+   //
+   /////////////////////////
+   public static void main( String args[] )
+   {
+      Subscribe cpd;
+      Scanner   sc;
+      Object    mon;
+      String[]  tkrs = { "DELL", "XLE" };
+      int       i, argc;
+      boolean   bMsgLog, bByteLog, bExch, bLvl2, bSnap, bSync;
+      boolean   bLvl2Only, bSumm, bMulti;
+
+      // Quick check
+
+      argc = args.length;
+      if ( ( argc > 0 ) && args[0].equals( "--version" ) ) {
+         System.out.printf( "%s\n", QuoddMsg.Version() );
+         return;
+      }
+      if ( ( argc > 0 ) && args[0].equals( "--config" ) ) {
+         System.out.printf( "%s\n", UltraChan.Config() );
+         return;
+      }
+      tkrs      = ( argc > 0 ) ? args[0].split(",") : tkrs;
+      bMsgLog   = false;
+      bByteLog  = false;
+      bExch     = false;
+      bLvl2     = false;
+      bSnap     = false;
+      bSync     = false;
+      bLvl2Only = false;
+      bSumm     = false;
+      bMulti    = false;
+      for ( i=1; i<argc; i++ ) {
+         bMsgLog   |= args[i].equals( "bMsgLog" );
+         bByteLog  |= args[i].equals( "bByteLog" );
+         bExch     |= args[i].equals( "EXCHANGE" );
+         bLvl2     |= args[i].equals( "LEVEL2" );
+         bLvl2     |= args[i].equals( "LEVEL2_ONLY" );
+         bLvl2Only |= args[i].equals( "LEVEL2_ONLY" );
+         bSnap     |= args[i].equals( "SNAPSHOT" );
+         bSync     |= args[i].equals( "SYNCHRONOUS" );
+         bSumm     |= args[i].equals( "SUMMARY" );
+         bMulti    |= args[i].equals( "MULTISNAP" );
+      }
+      mon        = new Object();
+      cpd        = new Subscribe( tkrs, bMsgLog, bByteLog, bMulti, mon );
+      cpd._bSumm = bSumm;
+      cpd.Start();
+      if ( bSnap )
+         cpd.SnapAll( bSync );
+      else if ( bExch )
+         cpd.OpenAllExch();
+      else if ( bLvl2 )
+         cpd.OpenAllLvl2( bLvl2Only );
+      else if ( !bMulti ) 
+         cpd.OpenAll();
+      if ( !bMulti && !bSync ) {
+         System.out.printf( "Hit <ENTER> to terminate...\n" );
+         sc = new Scanner( System.in );
+         sc.nextLine();
+      }
+      else
+         cpd.MultiSnap();
+      System.out.printf( "Shutting down ...\n" );
+      cpd.Stop();
+      System.out.printf( "Done!!\n" );
+   }
+}

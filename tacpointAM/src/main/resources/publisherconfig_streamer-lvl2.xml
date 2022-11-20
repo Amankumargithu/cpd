@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<t-publisher-config-bean xsi:type="java:com.tacpoint.publisher.TPublisherConfigBean" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+   <push-port>8180</push-port>
+   <accept-thread-pool-count>10</accept-thread-pool-count>
+   <selector-thread-count>4</selector-thread-count>
+   <aggregation-time>25</aggregation-time>
+   <equity-url>http://localhost:82/subscribe</equity-url>
+   <option-url>http://localhost:82/subscribe</option-url>
+   <run-jms-consumer>true</run-jms-consumer>
+   <user-id>777777</user-id>
+   <requires-authentication>false</requires-authentication>
+   <auth-user-name>streamer</auth-user-name>
+   <auth-password>str3amer!</auth-password>
+
+   <streamer-class-name>com.b4utrade.network.CompressedLZWMarketMakerStreamer</streamer-class-name>
+
+   <streamer-id>sid.l2_100-151</streamer-id>
+
+   <client-iD xsi:type="java:java.lang.String" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">wq2Mm2Consumer</client-iD>
+
+   <primary-iP xsi:type="java:java.lang.String" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">10.100.100.151:4444</primary-iP>
+   <consumer-name xsi:type="java:java.lang.String" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">wq2Level2</consumer-name>
+   <consumer xsi:type="java:java.lang.String" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">com.tacpoint.jms.QueuedTCPMessageConsumer</consumer>
+   <topic-name xsi:type="java:java.lang.String" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">/quotes/jboss/mm2</topic-name>
+   <qos xsi:type="java:java.lang.String" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">DISPATCH(threadPerChannel=1,highmark=20,lowmark=5):FRAG:FIFO:NAK(epochsz=10,retrinterval=2000):REACH(hbeat=2000):BOOT:IPMCAST(interface=?,sendbuffersize=65536,receivebuffersize=1000000,minsenddelay=0)</qos>
+   <message-handler xsi:type="java:java.lang.String" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">com.b4utrade.publisher.StreamingMM2MessageHandler</message-handler>
+   <message-reducer xsi:type="java:java.lang.String" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">null</message-reducer>
+   <authentication-class>com.tacpoint.publisher.authenticator</authentication-class>
+
+
+
+
+   <selector-class-name>com.tacpoint.publisher.TLZWCompressedSelector</selector-class-name>
+
+   <heartbeat-topic>.TIME</heartbeat-topic>
+
+   <heartbeat-interval-in-seconds>1</heartbeat-interval-in-seconds>
+
+   <heartbeat-message>T:.TIME|</heartbeat-message>
+
+</t-publisher-config-bean>

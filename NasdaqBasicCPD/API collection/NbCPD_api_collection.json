@@ -1,0 +1,252 @@
+{
+	"info": {
+		"_postman_id": "3a761e94-1d4a-4cc0-9181-39d3d72287cc",
+		"name": "cpds Copy",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "nbcpd",
+			"item": [
+				{
+					"name": "nbcpd Snap List",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\"MSFT.NB\":[\"701\",\"702\"]}"
+						},
+						"url": {
+							"raw": "{{domain}}/nbcpd/snap/list",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"nbcpd",
+								"snap",
+								"list"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "nbcpd List meta",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{domain}}/nbcpd/list/meta/701",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"nbcpd",
+								"list",
+								"meta",
+								"701"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "nbcpd List pending",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{domain}}/nbcpd/list/pending",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"nbcpd",
+								"list",
+								"pending"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "nbcpd Snap",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{domain}}/nbcpd/snap?ticker=MSFT.NB&dataType=301",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"nbcpd",
+								"snap"
+							],
+							"query": [
+								{
+									"key": "ticker",
+									"value": "MSFT.NB"
+								},
+								{
+									"key": "dataType",
+									"value": "301"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "nbcpd subscribe ticker",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{domain}}/nbcpd/subscribe?ticker=T:MSFT",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"nbcpd",
+								"subscribe"
+							],
+							"query": [
+								{
+									"key": "ticker",
+									"value": "T:MSFT"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "nbcpd List subscribed",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{domain}}/nbcpd/list/subscribed",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"nbcpd",
+								"list",
+								"subscribed"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "nbcpd unsubscribe ticker",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{domain}}/nbcpd/unsubscribe?ticker=T:MSFT",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"nbcpd",
+								"unsubscribe"
+							],
+							"query": [
+								{
+									"key": "ticker",
+									"value": "T:MSFT"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "nbcpd Stat",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{domain}}/nbcpd/stat",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"nbcpd",
+								"stat"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "nbcpd List image",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{domain}}/nbcpd/list/image",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"nbcpd",
+								"list",
+								"image"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Snap Dump",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Encoding",
+								"value": "gzip"
+							}
+						],
+						"url": {
+							"raw": "{{domain}}/nbcpd/snap/dump/301",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"nbcpd",
+								"snap",
+								"dump",
+								"301"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "nbcpd List root",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{domain}}/nbcpd/list/root",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"nbcpd",
+								"list",
+								"root"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}

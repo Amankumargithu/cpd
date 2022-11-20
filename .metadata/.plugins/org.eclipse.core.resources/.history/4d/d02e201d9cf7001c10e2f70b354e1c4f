@@ -1,0 +1,143 @@
+/******************************************************************************
+*
+*  JDBC.java
+*     JDBC tester
+*
+*  REVISION HISTORY:
+*     22 JUL 2014 jcs  Created.
+*
+*  (c) 2011-2014, Quodd Financial
+*******************************************************************************/
+package examples;
+
+import java.io.*;
+import java.util.*;
+
+import java.sql.*;
+
+public class JDBC
+{
+   private Connection  _con;
+   private boolean     _bOK;
+   private PrintStream cout;
+
+   //////////////////////
+   // Constructor
+   //////////////////////
+   public JDBC( String pDriver )
+   {
+      _con  = null;
+      _bOK  = false;
+      cout  = System.out;
+
+      // Load MySQL Driver
+
+      try {
+         Class.forName( pDriver );
+         _bOK = true;
+      } catch( Exception ex ) {
+         cout.printf( "ERROR-Load : %s\n", ex.getMessage() );
+      }
+   }
+
+
+   //////////////////////
+   // Operations
+   //////////////////////
+   public boolean Connect( String pConn )
+   {
+      try {
+         if ( _bOK && ( _con == null ) )
+            _con = DriverManager.getConnection( pConn );
+      } catch( Exception ex ) {
+         cout.printf( "ERROR-Connect( %s ) : %s\n", pConn, ex.getMessage() );
+      }
+      return( _con != null );
+   }
+
+   public ResultSet Query( String qry )
+   {
+      Statement stmt;
+      ResultSet res;
+
+      stmt = null;
+      res  = null;
+      try {
+         if ( _bOK && ( _con != null ) )
+            stmt = _con.createStatement(); 
+      } catch( Exception ex ) {
+         cout.printf( "ERROR-Statement : %s\n", ex.getMessage() );
+      }
+      try {
+         res = stmt.executeQuery( qry );
+      } catch( Exception ex ) {
+         cout.printf( "ERROR-Query( %s ) : %s\n", qry, ex.getMessage() );
+      }
+      return res;
+   }
+
+   public void Dump( ResultSet res )
+   {
+      int i, chan;
+
+      i = 0;
+      try {
+         while( res != null && res.next() ) {
+            try {
+               chan = res.getInt( "channel" );
+            } catch( Exception ex ) {
+               cout.printf( "ERROR-getInt() : %s\n", ex.getMessage() );
+            }
+            i += 1;
+         }
+      } catch( SQLException sx ) {
+         cout.printf( "ERROR-ResuleSet() : %s\n", sx.getMessage() );
+      }
+      cout.printf( "%d rows\n", i );
+      cout.printf( "%d rows\n", i );
+   }
+
+   public void Close( ResultSet c )
+   {
+      try {
+         if ( c != null )
+            c.close();
+      } catch( Exception ex ) {
+         cout.printf( "ERROR-Close() : %s\n", ex.getMessage() );
+      }
+   }
+
+
+   /////////////////////////
+   //
+   //  main()
+   //
+   /////////////////////////
+   public static void main( String args[] )
+   {
+      JDBC      cpd;
+      ResultSet res;
+      String    _defDvr, _defCon, _defQry;
+      String    dvr, con, qry;
+      int       argc;
+
+      // Defaults : Driver, Connection, Query
+
+      _defDvr = "com.mysql.jdbc.Driver";
+      _defCon = "jdbc:mysql://localhost:3306?user=root&password=tunahead";
+      _defQry = "select * from MktCtr;";
+
+      // Rock on
+
+      argc = args.length;
+      dvr  = ( argc > 0 ) ? args[0] : _defDvr;
+      con  = ( argc > 1 ) ? args[1] : _defCon;
+      qry  = ( argc > 2 ) ? args[2] : _defQry;
+      cpd  = new JDBC( dvr );
+      if ( cpd.Connect( con ) ) {
+         res = cpd.Query( qry );
+         cpd.Dump( res );
+         cpd.Close( res );
+      }
+   }
+}

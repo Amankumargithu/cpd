@@ -1,0 +1,22 @@
+apply plugin: 'java'
+apply plugin: 'application'
+apply plugin: 'eclipse'
+
+sourceCompatibility = 1.8
+version = '1.0'
+archivesBaseName = "djnewsCPD"
+mainClassName = "com.quodd.QuoddSupportApplication"
+
+jar{
+exclude("db.properties")
+}
+
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+ 	compile fileTree(dir: 'jars', include: ['*.jar'])
+    compile project(':QuoddCommon')
+}

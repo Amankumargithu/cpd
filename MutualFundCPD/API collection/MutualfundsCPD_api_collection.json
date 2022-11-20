@@ -1,0 +1,228 @@
+{
+	"info": {
+		"_postman_id": "3a761e94-1d4a-4cc0-9181-39d3d72287cc",
+		"name": "cpds Copy",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "mfcpd",
+			"item": [
+				{
+					"name": "subscribe ticker",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{domain}}/mfcpd/subscribe?ticker=NLWBX",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"mfcpd",
+								"subscribe"
+							],
+							"query": [
+								{
+									"key": "ticker",
+									"value": "NLWBX"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "List image",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{domain}}/mfcpd/list/image",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"mfcpd",
+								"list",
+								"image"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Snap List",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\"RYDHX\":[\"723\"],\"NLWBX\":[\"723\"]}"
+						},
+						"url": {
+							"raw": "{{domain}}/mfcpd/snap/list",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"mfcpd",
+								"snap",
+								"list"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Stat",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{domain}}/mfcpd/stat",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"mfcpd",
+								"stat"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Snap",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{domain}}/mfcpd/snap?ticker=RYDHX&dataType=323",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"mfcpd",
+								"snap"
+							],
+							"query": [
+								{
+									"key": "ticker",
+									"value": "RYDHX"
+								},
+								{
+									"key": "dataType",
+									"value": "323"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Snap Dump",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{domain}}/mfcpd/snap/dump/323",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"mfcpd",
+								"snap",
+								"dump",
+								"323"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "List meta",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{domain}}/mfcpd/list/meta/723",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"mfcpd",
+								"list",
+								"meta",
+								"723"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "List root",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{domain}}/mfcpd/list/root",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"mfcpd",
+								"list",
+								"root"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "List pending",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{domain}}/mfcpd/list/pending",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"mfcpd",
+								"list",
+								"pending"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "unsubscribe ticker",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{domain}}/mfcpd/unsubscribe?ticker=NLWBX",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"mfcpd",
+								"unsubscribe"
+							],
+							"query": [
+								{
+									"key": "ticker",
+									"value": "NLWBX"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}

@@ -1,0 +1,310 @@
+package com.quodd.future;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map.Entry;
+import java.util.Properties;
+import java.util.Set;
+
+import com.b4utrade.bean.StockOptionBean;
+import com.quodd.util.CPDProperty;
+import com.quodd.util.ExpirationDateComparator;
+import com.quodd.util.NTPLogger;
+
+public class FuturesSymbolMappingInitializer {
+
+	private HashMap<String, String> interestRateSymbolMapping = new HashMap<>();
+	private HashMap<String, String> eightExpirationSymbolMapping = new HashMap<>();
+	private HashMap<String, String> mondayExpirationSymbolMapping = new HashMap<>();
+
+	private FuturesMappingSymbolsCache cache = FuturesMappingSymbolsCache.getInstance();
+	private FuturesStreamingController streamingController = FuturesStreamingController.getInstance();
+	private FuturesOpenInterestParser openInterestParser = FuturesOpenInterestParser.getInstance();
+
+	public FuturesSymbolMappingInitializer()
+	{
+
+		eightExpirationSymbolMapping.put(".N100E", "NQ");
+//		eightExpirationSymbolMapping.put(".DJIA", "ZD");
+		eightExpirationSymbolMapping.put(".SP500E", "ES");
+		eightExpirationSymbolMapping.put(".SP500", "SP");
+		eightExpirationSymbolMapping.put(".DJIA5", "YM");
+		eightExpirationSymbolMapping.put(".RUSSELLE", "RJ");
+
+		interestRateSymbolMapping.put(".EURO", "6E");
+		interestRateSymbolMapping.put(".EUROE", "E7");
+//		interestRateSymbolMapping.put(".EUROD", "GE");
+		interestRateSymbolMapping.put(".US", "DX");
+		interestRateSymbolMapping.put(".TN10Y", "ZN");
+		interestRateSymbolMapping.put(".TN5Y", "ZF");
+		interestRateSymbolMapping.put(".TN2Y", "ZT");
+		interestRateSymbolMapping.put(".YEN", "6J");
+		interestRateSymbolMapping.put(".GOLD", "GD");
+		interestRateSymbolMapping.put(".PLATINUM", "PL");
+		interestRateSymbolMapping.put(".OILE", "QM");
+		interestRateSymbolMapping.put(".NGAS", "NG");
+		interestRateSymbolMapping.put(".COPPER", "HG");
+		interestRateSymbolMapping.put(".SILVER", "SI");
+		interestRateSymbolMapping.put(".OIL", "CL");
+		interestRateSymbolMapping.put(".RBOB", "RB");
+		interestRateSymbolMapping.put(".CORN", "ZC");
+
+		mondayExpirationSymbolMapping.put(".NIKKEI", "NKD");
+
+	}
+
+	public void mapSymbols(){
+		Set<String> keys = interestRateSymbolMapping.keySet();
+		for(String s : keys)
+		{
+			String root = interestRateSymbolMapping.get(s);
+			mapInterestRateSymbol(root, s);
+		}
+		keys = eightExpirationSymbolMapping.keySet();
+		for(String s : keys)
+		{
+			String root = eightExpirationSymbolMapping.get(s);
+			mapEightExpirationSymbol(root, s);
+		}
+		keys = mondayExpirationSymbolMapping.keySet();
+		for(String s : keys)
+		{
+			String root = mondayExpirationSymbolMapping.get(s);
+			mapMondayExpirationSymbol(root, s);
+		}
+		readMappingsFromFile();
+	}
+
+	public void mapMondayExpirationSymbol(String rootSymbol, String uiSymbol)
+	{
+		HashSet<String> subscribeSymbols = new HashSet<String>();
+		Calendar expireDate = Calendar.getInstance();
+		int day = expireDate.get(Calendar.DAY_OF_WEEK);
+		int daysToSubtract = 0;
+		if(day == 6)
+			daysToSubtract = 4;
+		else if (day == 5)
+			daysToSubtract = 3;
+		else if ( day == 4)
+			daysToSubtract = 2;
+		else if (day == 3)
+			daysToSubtract = 1;
+		expireDate.add(Calendar.DAY_OF_WEEK, -daysToSubtract);
+		String mappedSymbol= null;
+		HashMap<String, Calendar> expirationDateMap = new HashMap<>();
+		HashSet<StockOptionBean> beans = cache.getFuturesChain(rootSymbol);
+		for(StockOptionBean bean : beans)
+		{
+			String futureSymbol = bean.getTicker();
+			subscribeSymbols.add(futureSymbol);
+			StockOptionBean fundamentalBean = cache.getFundamentalData(futureSymbol);
+			if(fundamentalBean != null && fundamentalBean.getExpirationDate() !=  null)
+			{
+				System.out.println(futureSymbol + " " + fundamentalBean.getExpirationDate());
+				expirationDateMap.put(futureSymbol,fundamentalBean.getExpirationDate());
+			}
+		}
+		List<Entry<String, Calendar>> list = new LinkedList<Entry<String, Calendar>>(expirationDateMap.entrySet());
+		Collections.sort(list, new ExpirationDateComparator());
+		for (Entry<String, Calendar> entry : list)
+		{
+			if(mappedSymbol != null)
+				break;
+			if(entry.getValue().before(Calendar.getInstance()))
+				continue;
+			if(entry.getValue().before(expireDate))
+				continue;
+			else if(expireDate.equals(entry.getValue()))
+				mappedSymbol = entry.getKey();
+			else
+				mappedSymbol = entry.getKey();
+		}
+		if(mappedSymbol != null)
+		{
+			cache.addFutureMappedSymbol(mappedSymbol, uiSymbol);
+			cache.addUiMappedFutureSymbol(uiSymbol, mappedSymbol);
+			NTPLogger.info("Monday Expired Mapped - " + mappedSymbol + " with " + uiSymbol);
+		}
+		else
+			NTPLogger.info("Monday Expired Mapped - " + mappedSymbol + " with " + uiSymbol);
+		streamingController.addRequestedSymbols(subscribeSymbols);
+	}
+
+	public void mapEightExpirationSymbol(String rootSymbol, String uiSymbol)
+	{
+		HashSet<String> subscribeSymbols = new HashSet<String>();
+		Calendar expireDate = Calendar.getInstance();
+		expireDate.add(Calendar.DAY_OF_MONTH, 8);
+		String mappedSymbol= null;
+		String secondMappedSymbol = null;	//Generally Pit symbols
+		HashMap<String, Calendar> expirationDateMap = new HashMap<>();
+		HashSet<StockOptionBean> beans = cache.getFuturesChain(rootSymbol);
+		boolean isPitSymbols = false;
+		if(rootSymbol.equals("SP"))
+			isPitSymbols = true;
+		for(StockOptionBean bean : beans)
+		{
+			String futureSymbol = bean.getTicker();
+			subscribeSymbols.add(futureSymbol);
+			if(futureSymbol.endsWith(".P") && !futureSymbol.startsWith("/SP"))
+				continue;
+			StockOptionBean fundamentalBean = cache.getFundamentalData(futureSymbol);
+			if(futureSymbol.endsWith(".ICE"))
+			{
+				try
+				{
+					String tempTicker = "/YM" + futureSymbol.substring(3,6);
+					StockOptionBean tempBean = cache.getFundamentalData(tempTicker);
+					if(tempBean != null)
+						fundamentalBean.setExpirationDate(tempBean.getExpirationDate());
+				}
+				catch(Exception e)
+				{
+					e.printStackTrace();
+				}
+			}
+			if(fundamentalBean != null && fundamentalBean.getExpirationDate() !=  null)
+			{
+				System.out.println(futureSymbol + " " + fundamentalBean.getExpirationDate());
+				expirationDateMap.put(futureSymbol,fundamentalBean.getExpirationDate());
+			}
+		}
+		List<Entry<String, Calendar>> list = new LinkedList<Entry<String, Calendar>>(expirationDateMap.entrySet());
+		Collections.sort(list, new ExpirationDateComparator());
+		for (Entry<String, Calendar> entry : list)
+		{
+			if(isPitSymbols){
+				if(mappedSymbol != null && secondMappedSymbol != null)
+					break;
+			}
+			else{
+				if(mappedSymbol != null)
+					break;
+			}
+			if(entry.getValue().before(Calendar.getInstance()))
+				continue;
+			if(entry.getValue().before(expireDate))
+				continue;
+			if(isPitSymbols){
+				if(entry.getKey().endsWith(".P"))
+					secondMappedSymbol = entry.getKey();
+				else
+					mappedSymbol = entry.getKey();
+			}
+			else
+				mappedSymbol = entry.getKey();
+		}
+		if(mappedSymbol != null)
+		{
+			cache.addFutureMappedSymbol(mappedSymbol, uiSymbol);
+			cache.addUiMappedFutureSymbol(uiSymbol, mappedSymbol);
+			NTPLogger.info("Eigth Expired Mapped - " + mappedSymbol + " with " + uiSymbol);
+		}
+//		else
+//			NTPLogger.info("Eigth Expired Mapped - " + mappedSymbol + " with " + uiSymbol);
+		if(secondMappedSymbol != null){
+			cache.addFutureMappedSymbol(secondMappedSymbol, uiSymbol);
+			cache.addUiMappedFutureSymbol(uiSymbol, secondMappedSymbol);
+			NTPLogger.info("Eigth Expired Second Mapped - " + secondMappedSymbol + " with " + uiSymbol);
+		}
+//		else
+//			NTPLogger.info("Eigth Expired Second Mapped - " + secondMappedSymbol + " with " + uiSymbol);
+		streamingController.addRequestedSymbols(subscribeSymbols);
+	}
+
+	public void mapInterestRateSymbol(String rootSymbol, String uiSymbol)
+	{
+		HashSet<String> subscribeSymbols = new HashSet<String>();
+		String mappedSymbol= null;
+		String secondMappedSymbol = null;	//Generally Pit symbols
+		long maxOpenInterest = 0;
+		HashSet<StockOptionBean> beans = cache.getFuturesChain(rootSymbol);
+		for(StockOptionBean bean : beans)
+		{
+			String futureSymbol = bean.getTicker();
+			subscribeSymbols.add(futureSymbol);
+			StockOptionBean fundamentalBean = cache.getFundamentalData(futureSymbol);
+			if(fundamentalBean != null)
+			{
+				long openInterest;
+				String oi =  openInterestParser.getOpenInterest(futureSymbol);
+				if(oi == null)
+					openInterest = 0;
+				else
+					openInterest = Long.parseLong(oi);
+				System.out.println(futureSymbol + " " + openInterest);
+				if(openInterest > maxOpenInterest)
+				{
+					mappedSymbol = futureSymbol;
+					maxOpenInterest = openInterest;
+					secondMappedSymbol = null;
+				}
+				else if(openInterest == maxOpenInterest)
+					secondMappedSymbol = futureSymbol;
+			}
+		}
+		if(mappedSymbol != null && !mappedSymbol.endsWith(".P"))
+		{
+			cache.addFutureMappedSymbol(mappedSymbol, uiSymbol);
+			cache.addUiMappedFutureSymbol(uiSymbol, mappedSymbol);
+			NTPLogger.info("Mapped - " + mappedSymbol + " with " + uiSymbol);
+		}
+		if(secondMappedSymbol != null && !secondMappedSymbol.endsWith(".P"))
+		{
+			cache.addFutureMappedSymbol(secondMappedSymbol, uiSymbol);
+			cache.addUiMappedFutureSymbol(uiSymbol, secondMappedSymbol);
+			NTPLogger.info("Mapped second- " + secondMappedSymbol + " with " + uiSymbol);
+		}
+		streamingController.addRequestedSymbols(subscribeSymbols);
+	}
+	private void readMappingsFromFile() {
+		try 
+		{
+			String spotFileName = "/usr/jboss-6.0.0/properties/futureSpotSymbol.txt";
+			try
+			{
+				spotFileName = CPDProperty.getInstance().getProperty("SPOT_FILE_PATH");
+			}
+			catch(Exception e)
+			{
+				NTPLogger.missingProperty("SPOT_FILE_PATH");
+				spotFileName = "/usr/jboss-6.0.0/properties/futureSpotSymbol.txt";
+				NTPLogger.defaultSetting("SPOT_FILE_PATH", spotFileName);
+			}
+			File spotFile = new File (spotFileName);
+			if(!spotFile.exists())
+			{
+				NTPLogger.warning("File " + spotFileName + " not found");
+				return;
+			}
+			System.out.println("spotFile : "+spotFileName);
+			Properties p = new Properties ();
+			p.load(new FileInputStream(spotFile));
+			Enumeration iter = p.keys();
+			while (iter.hasMoreElements()) 
+			{
+				String uiSymbol = (String) iter.nextElement();
+				String value = p.getProperty(uiSymbol);
+				ArrayList<String> mappedSymbolsList = new ArrayList<String>();
+				String[] valueArray = value.split(",");
+				for(String mappedSymbol : valueArray) {
+					cache.addFutureMappedSymbol(mappedSymbol, uiSymbol);
+					NTPLogger.warning("Mapped Futures " + mappedSymbol + " " + uiSymbol);
+					mappedSymbolsList.add(mappedSymbol);
+					streamingController.addRequestedSymbol(mappedSymbol);
+				}
+				cache.addUiMappedFutureSymbols(uiSymbol, mappedSymbolsList); 
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+}

@@ -1,0 +1,40 @@
+package abcd;
+import java.io.*;
+import java.net.*;
+
+public class Httpsendrequest {
+
+	public static void main(String[] args) {
+	try {
+		Httpsendrequest.MyGETRequest();
+	} catch(Exception e) {
+		e.printStackTrace();
+	}
+
+	}
+	public static void MyGETRequest() throws IOException {
+	    URL urlForGetRequest = new URL("http://www6.quodd.com/ftrcpd/stockOption/.GOLD");
+	    String readLine = null;
+	    HttpURLConnection conection = (HttpURLConnection) urlForGetRequest.openConnection();
+	    conection.setRequestMethod("GET");
+	    conection.setRequestProperty("ticker", "GOLD");
+	    int responseCode = conection.getResponseCode();
+
+
+	    if (responseCode == HttpURLConnection.HTTP_OK) {
+	        BufferedReader in = new BufferedReader(
+	            new InputStreamReader(conection.getInputStream()));
+	        StringBuffer response = new StringBuffer();
+	        while ((readLine = in .readLine()) != null) {
+	            response.append(readLine);
+	        } in .close();
+	        // print result
+	        System.out.println("JSON String Result " + response.toString());
+	    } else {
+	        System.out.println("GET NOT WORKED");
+	    }
+
+	}
+
+
+}

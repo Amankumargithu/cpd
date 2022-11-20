@@ -1,0 +1,162 @@
+<project name="quodd.equity.plus.console" default="jar" basedir=".">
+    
+    <property name="app.name"          value="quodd" />
+    
+    <property name="home.dir"          value="../b4utrade/quodd/applets" />    
+    <property name="jars.dir"          value="../b4utrade/quodd/applets/jars"/>
+    <property name="b4utrade.src.dir"  value="../b4utrade/src" /> 
+    <property name="src.dir"           value="../b4utrade/quodd/applets" /> 
+    <property name="classes.dir"       value="./classes" /> 
+    <property name="dist.dir"          value="./dist" />
+    <property file="build.properties"/>        
+    <patternset id="java.files.pattern" includes="**/*.java"/>
+
+    <path id="compile.classpath">
+    
+        <pathelement location="${jars.dir}/jide-common.jar"/>        
+        <pathelement location="${jars.dir}/jide-components.jar"/>
+        <pathelement location="${jars.dir}/jide-dock.jar"/>
+        <pathelement location="${jars.dir}/jide-grids.jar"/>
+        <pathelement location="${jars.dir}/icebrowser_bean.jar"/>
+        <pathelement location="${jars.dir}/concurrent.jar"/>
+        <pathelement location="${b4utrade.src.dir}"/> 
+        <pathelement location="${tacpoint.src.dir}"/>    
+    	<pathelement location="${src.dir}"/>
+                
+    </path>
+    
+    <property name="classpath" refid="compile.classpath" />
+    
+    
+    <!-- =================================================================== -->
+    <!-- Compile package                                                     -->
+    <!-- =================================================================== -->
+    <target name="compile">
+    
+        <echo message="compile classpath: ${compile.classpath}"/>        
+
+        <delete dir="${dist.dir}"/>
+        <mkdir dir="${dist.dir}"/> 
+ 
+        <delete dir="${classes.dir}"/>       
+        <mkdir dir="${classes.dir}"/>        
+ 
+        <javac srcdir="${tacpoint.src.dir}" 
+           destdir="${classes.dir}" 
+           includes="com/tacpoint/common/DefaultObject.java,
+                     com/tacpoint/exception/DefaultException.java,
+                     com/tacpoint/exception/SessionExpiredException.java,
+                     com/tacpoint/exception/BusinessException.java,
+                     com/tacpoint/network/IPostNetworkRequestHandler.java,
+                     com/tacpoint/network/NetworkCommunicator.java,
+                     com/tacpoint/network/NetworkConfiguration.java,
+                     com/tacpoint/network/NetworkConnection.java,
+                     com/tacpoint/network/NetworkRequestExecutor.java,
+                     com/tacpoint/http/**,
+                     com/tacpoint/Logger.java,
+                     com/tacpoint/cache/**,
+                     com/tacpoint/dataaccess/**,
+                     com/tacpoint/dataconnection/DBConnectionManager.java,
+                     com/tacpoint/exception/DatabaseException.java,
+                     com/tacpoint/exception/NoDataFoundException.java,
+        	         com/tacpoint/math/BlackScholesCalculator.java,
+                     com/tacpoint/util/Constants.java,
+                     com/tacpoint/jms/ReducedMessageInflator.java,
+                     com/tacpoint/util/Environment.java,
+                     com/tacpoint/util/Utility.java"
+                    
+           debug="true"  
+           classpath="${classpath}"  
+        />
+        <javac srcdir="${b4utrade.src.dir}" 
+           destdir="${classes.dir}" 
+           includes="com/b4utrade/bean/MM2MessageBean.java,
+                     com/b4utrade/bean/DetailedQuoteBean.java,
+                     com/b4utrade/bean/DataLinkBean.java,
+                     com/b4utrade/bean/QTMessageBean.java,
+                     com/b4utrade/bean/StockPriceBean.java,
+                     com/b4utrade/bean/StockProfileBean.java,
+                     com/b4utrade/bean/OptionsResultBean.java,
+                     com/b4utrade/bean/OptionItem.java,
+                     com/b4utrade/bean/UserPortfolioTrackerBean.java,
+                     com/b4utrade/bean/UserPortfolioBean.java,
+                     com/b4utrade/bean/UserPortfolioDetailBean.java,
+                     com/b4utrade/bean/UserAlertBean.java,
+                     com/b4utrade/bean/UserAlertDetailBean.java,
+                     com/b4utrade/bean/UserLoginStatusBean.java,
+                     com/b4utrade/bean/QuoddConfigurationBean.java,                     
+                     com/b4utrade/bean/QuoddUserEntitlementBean.java,
+                     com/b4utrade/bean/QuoddUserOperationStatusBean.java,                     
+                     com/b4utrade/bean/StreamerInitializationBean.java,
+                     com/b4utrade/bean/TickerLookupBean,
+                     com/b4utrade/bean/CompanyAnnouncementBean.java,                     
+                     com/b4utrade/helper/EquityHttpPollingHelper.java,
+                     com/b4utrade/helper/MarketMakerHttpPollingHelper.java,
+                     com/b4utrade/helper/MarketMakerNetworkInitHelper.java,
+                     com/b4utrade/helper/OptionHttpPollingHelper.java,
+                     com/b4utrade/helper/QuoteNetworkInitHelper.java,
+                     com/b4utrade/helper/QuoteDetailNetworkInitHelper.java,
+                     com/b4utrade/helper/StockActivityHelper.java,
+                     com/b4utrade/helper/StockNewsUpdateHelper.java,
+                     com/b4utrade/helper/StockQuoteAndNewsHelper.java,                     
+                     com/b4utrade/network/**,
+                     com/b4utrade/stockutil/DefaultStockObject.java,
+                     com/b4utrade/stockutil/MarketMakerPrice.java,
+                     com/b4utrade/stockutil/StockItems.java,
+                     com/b4utrade/util/MessageQueue.java,
+                     com/b4utrade/accessor/AccessorConstant.java
+                     com/b4utrade/bo/MarketScannerBO.java,
+                     com/b4utrade/bo/ScreenerCriteriaBO.java,
+                     com/b4utrade/bo/StockBO.java,
+                     com/b4utrade/bo/StockNewsBO.java,
+                     com/b4utrade/helper/NewsResultItem.java,
+                     com/b4utrade/helper/TimingExpiredCache.java,
+                     com/b4utrade/stockutil/StockActivity.java,
+                     com/b4utrade/stockutil/StockItems.java,
+                     com/b4utrade/stockutil/StockTypeConstants.java"
+                     
+           debug="true"  
+           classpath="${classpath}"  
+        />
+        
+        <javac srcdir="${src.dir}" 
+           destdir="${classes.dir}" 
+           includes="**"
+           fork="yes"
+           executable="/usr/java/jdk1.5.0/bin/javac"
+           compiler="javac1.5"           
+           debug="true"  
+           classpath="${classpath}"  
+        />        
+        <delete file="${classes.dir}/com/tacpoint/cache/**" />      
+        <delete file="${classes.dir}/com/tacpoint/dataaccess/**" />      
+        <delete file="${classes.dir}/com/tacpoint/dataconnection/DBConnectionManager.class" />      
+        <delete file="${classes.dir}/com/tacpoint/exception/DatabaseException.class" />      
+        <delete file="${classes.dir}/com/tacpoint/exception/NoDataFoundException.class" />      
+        <delete file="${classes.dir}/com/tacpoint/util/Constants.class" />      
+        <delete file="${classes.dir}/com/tacpoint/util/Environment.class" />      
+        <delete file="${classes.dir}/com/tacpoint/util/Utility.class" />      
+        <delete file="${classes.dir}/com/b4utrade/accessor/AccessorConstant.class" /> 
+        <delete file="${classes.dir}/com/b4utrade/bo/MarketScannerBO.class" /> 
+        <delete file="${classes.dir}/com/b4utrade/bo/ScreenerCriteriaBO.class" /> 
+        <delete file="${classes.dir}/com/b4utrade/helper/NewsResultItem.class" /> 
+        <delete file="${classes.dir}/com/b4utrade/helper/TimingExpiredCache.class" /> 
+        <delete file="${classes.dir}/com/b4utrade/stockutil/StockItems.class" /> 
+        <delete file="${classes.dir}/com/b4utrade/stockutil/StockActivity.class" /> 
+        <delete file="${classes.dir}/com/b4utrade/stockutil/StockTypeConstants.class" /> 
+
+    </target>
+    <target name="jar" depends="compile">
+        
+        <copydir src="${src.dir}/com/quodd/equityplus/images"
+           dest="${classes.dir}/com/quodd/equityplus/images"
+        />
+    	<copy file="${src.dir}/com/quodd/equityplus/property/default.xml"
+    		todir="${classes.dir}/com/quodd/equityplus/property/" />
+ 
+        <jar jarfile="${dist.dir}/${app.name}.jar"
+             basedir="${classes.dir}"
+             includes="**"/>
+     
+    </target>    
+ </project>

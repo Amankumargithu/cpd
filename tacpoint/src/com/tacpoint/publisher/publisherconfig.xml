@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<t-publisher-config-bean xsi:type="java:com.tacpoint.publisher.TPublisherConfigBean" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+   <push-port>80</push-port>
+   <accept-thread-pool-count>5</accept-thread-pool-count>
+   <selector-thread-count>1</selector-thread-count>
+   <equity-url>http://localhost:82/subscribe</equity-url>
+   <option-url>http://localhost:82/subscribe</option-url>
+   <run-jms-consumer>false</run-jms-consumer>
+   <aggregation-time>100</aggregation-time>
+   <user-id>777777</user-id>
+   <requires-authentication>true</requires-authentication>
+   <auth-user-name>streamer</auth-user-name>
+   <auth-password>str3amer!</auth-password>
+   <streamer-class-name>com.b4utrade.network.OptimizedEquityStreamer</streamer-class-name>
+   <subscription-analyzer>com.b4utrade.subscription.OptionSubscriptionAnalyzer</subscription-analyzer>
+
+   <client-iD xsi:type="java:java.lang.String" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">quotesConsumer</client-iD>
+   <client-iD xsi:type="java:java.lang.String" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">optionsConsumer</client-iD>
+
+   <primary-iP xsi:type="java:java.lang.String" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">172.16.8.81</primary-iP>
+   <primary-iP xsi:type="java:java.lang.String" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">172.16.9.81</primary-iP>
+
+   <consumer-name xsi:type="java:java.lang.String" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">quotes</consumer-name>
+   <consumer-name xsi:type="java:java.lang.String" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">options</consumer-name>
+
+   <topic-name xsi:type="java:java.lang.String" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">/quotes/zrh</topic-name>
+   <topic-name xsi:type="java:java.lang.String" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">/options/quotes</topic-name>
+
+   <qos xsi:type="java:java.lang.String" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">DISPATCH(throttling=0,threadPerChannel=1,highmark=10):IPMCAST(interface=?,sendbuffersize=65536,receivebuffersize=10000000,senddelay=0)</qos>
+   <qos xsi:type="java:java.lang.String" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">DISPATCH(throttling=0,threadPerChannel=1,highmark=10):IPMCAST(interface=?,sendbuffersize=65536,receivebuffersize=10000,senddelay=0)</qos>
+
+   <message-handler xsi:type="java:java.lang.String" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">null</message-handler>
+   <message-handler xsi:type="java:java.lang.String" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">null</message-handler>
+
+   <message-reducer xsi:type="java:java.lang.String" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">com.b4utrade.network.QTMessageReducer</message-reducer>
+   <message-reducer xsi:type="java:java.lang.String" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">com.b4utrade.network.QTMessageReducer</message-reducer>
+   <authentication-class>com.tacpoint.publisher.authenticator</authentication-class>
+
+   <heartbeat-topic>TACPOINT</heartbeat-topic>
+
+   <heartbeat-interval-in-seconds>5</heartbeat-interval-in-seconds>
+<heartbeat-message>T:TACPOINT?</heartbeat-message>
+
+</t-publisher-config-bean>

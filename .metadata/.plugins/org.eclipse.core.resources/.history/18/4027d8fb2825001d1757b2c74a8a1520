@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<t-publisher-config-bean xsi:type="java:com.tacpoint.publisher.TPublisherConfigBean" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+   <push-port>8080</push-port>
+   <accept-thread-pool-count>30</accept-thread-pool-count>
+   <selector-thread-count>12</selector-thread-count>
+   <aggregation-time>150</aggregation-time>
+   <equity-url>http://localhost:82/subscribe</equity-url>
+   <option-url>http://localhost:82/subscribe</option-url>
+   <run-jms-consumer>true</run-jms-consumer>
+   <user-id>777787</user-id>
+   <requires-authentication>false</requires-authentication>
+   <auth-user-name>streamer</auth-user-name>
+   <auth-password>str3amer!</auth-password>
+
+   <!--
+   <streamer-class-name>com.b4utrade.network.QTOptimizedEquityStreamer</streamer-class-name>
+   <streamer-class-name>com.b4utrade.network.CompressedLZWEquityStreamer</streamer-class-name>
+   -->
+
+   <streamer-class-name>com.b4utrade.network.CompressedLZWEquityStreamer</streamer-class-name>
+
+   <streamer-id>sid.eq_sec033</streamer-id>
+
+   <subscription-analyzer>com.b4utrade.subscription.OptionSubscriptionAnalyzer</subscription-analyzer>
+   <futures-jndi-address>172.16.192.39</futures-jndi-address>
+   <!--
+   <subscription-analyzer>null</subscription-analyzer>
+   -->
+<!-- 08/27/2013 Realtime Equites consumer -->
+   <client-iD xsi:type="java:java.lang.String" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">optionsConsumers1</client-iD>
+   <primary-iP xsi:type="java:java.lang.String" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">172.16.197.33</primary-iP>
+   <consumer xsi:type="java:java.lang.String" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">com.tacpoint.jms.QueuedJMSMessageConsumer</consumer>
+   <consumer-name xsi:type="java:java.lang.String" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">optionsS1</consumer-name>
+   <topic-name xsi:type="java:java.lang.String" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">/qsec058/equity</topic-name>
+   <qos xsi:type="java:java.lang.String" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">DISPATCH(throttling=0,threadPerChannel=1,highmark=10):IPMCAST(interface=?,sendbuffersize=65536,receivebuffersize=10000000,senddelay=0)</qos>
+   <message-handler xsi:type="java:java.lang.String" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">null</message-handler>
+   <message-reducer xsi:type="java:java.lang.String" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">com.b4utrade.network.EquityQTMessageReducer</message-reducer>
+<!-- End of Equities Consumer  -->
+
+<!--- 08/02/2012 DJNews consumer -->
+   <client-iD xsi:type="java:java.lang.String" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">newsConsumers1</client-iD>
+   <primary-iP xsi:type="java:java.lang.String" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">172.16.195.33</primary-iP>
+   <consumer xsi:type="java:java.lang.String" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">com.tacpoint.jms.NewsJMSMessageConsumer</consumer>
+   <consumer-name xsi:type="java:java.lang.String" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">newsS1</consumer-name>
+   <topic-name xsi:type="java:java.lang.String" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">/news/dj</topic-name>
+   <qos xsi:type="java:java.lang.String" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">DISPATCH(throttling=0,threadPerChannel=1,highmark=10):IPMCAST(interface=?,sendbuffersize=65536,receivebuffersize=10000000,senddelay=0)</qos>
+   <message-handler xsi:type="java:java.lang.String" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">null</message-handler>
+   <message-reducer xsi:type="java:java.lang.String" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">null</message-reducer>
+<!-- End of DJNews -->
+
+<!-- 08/27/2013 Futures CPD -->
+   <client-iD xsi:type="java:java.lang.String" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">optionsConsumers2</client-iD>
+   <primary-iP xsi:type="java:java.lang.String" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">172.16.197.33</primary-iP>
+   <consumer xsi:type="java:java.lang.String" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">com.tacpoint.jms.QueuedJMSMessageConsumer</consumer>
+   <consumer-name xsi:type="java:java.lang.String" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">optionsS2</consumer-name>
+   <topic-name xsi:type="java:java.lang.String" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">/qsec039/futures</topic-name> 
+   <qos xsi:type="java:java.lang.String" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">DISPATCH(throttling=0,threadPerChannel=1,highmark=10):IPMCAST(interface=?,sendbuffersize=65536,receivebuffersize=10000000,senddelay=0)</qos>
+   <message-handler xsi:type="java:java.lang.String" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">null</message-handler>
+   <message-reducer xsi:type="java:java.lang.String" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">com.b4utrade.network.EquityQTMessageReducer</message-reducer>
+<!-- End of Futures -->
+
+   <authentication-class>com.tacpoint.publisher.authenticator</authentication-class>
+
+
+   <heartbeat-topic>.TIME</heartbeat-topic>
+   <heartbeat-interval-in-seconds>1</heartbeat-interval-in-seconds>
+   <heartbeat-message>T:.TIME|</heartbeat-message>
+
+   <heartbeat1-topic>.STIME</heartbeat1-topic>
+   <heartbeat1-interval-in-seconds>1</heartbeat1-interval-in-seconds>
+   <heartbeat1-message>T:.STIME|</heartbeat1-message>
+
+   <!-- offset to EST in millis -->
+   <est-offset>0</est-offset>
+
+   <selector-class-name>com.tacpoint.publisher.TLZWCompressedSelector</selector-class-name>
+
+</t-publisher-config-bean>

@@ -1,0 +1,16 @@
+apply plugin: 'java'
+apply plugin: 'eclipse'
+apply plugin: 'java-library-distribution'
+sourceCompatibility = 1.8
+version = '1.0'
+repositories {
+    mavenCentral()
+    
+}
+
+dependencies {
+        compile fileTree(dir: 'jars', include: ['*.jar'])
+      implementation group: 'org.apache.xml', name: 'serializer', version: '2.7.1'
+        
+    
+}

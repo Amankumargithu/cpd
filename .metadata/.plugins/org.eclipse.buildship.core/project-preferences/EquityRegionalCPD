@@ -1,0 +1,12 @@
+#
+#Tue Nov 15 19:02:09 IST 2022
+buildDir=build
+buildScriptPath=build.gradle
+classpath=<?xml version\="1.0" encoding\="UTF-8"?>\n<classpath>\n<classpathentry kind\="src" path\="/EJBinterfaces"/>\r\n<classpathentry kind\="lib" path\="C\:/Users/SONY/.gradle/caches/modules-2/files-2.1/javax.ejb/javax.ejb-api/3.2/6da48d715f67cd6ad55e96cc55030532d35062f1/javax.ejb-api-3.2.jar" sourcepath\="C\:/Users/SONY/.gradle/caches/modules-2/files-2.1/javax.ejb/javax.ejb-api/3.2/24d3f4bc3af9eec058a5069c6e64aef35d0cd021/javax.ejb-api-3.2-sources.jar">\r\n\t<attributes>\r\n\t\t<attribute name\="gradle_used_by_scope" value\="main,test"/>\r\n\t</attributes>\r\n</classpathentry>\r\n<classpathentry kind\="lib" path\="C\:/Users/SONY/.gradle/caches/modules-2/files-2.1/javax.transaction/javax.transaction-api/1.2/d81aff979d603edd90dcd8db2abc1f4ce6479e3e/javax.transaction-api-1.2.jar" sourcepath\="C\:/Users/SONY/.gradle/caches/modules-2/files-2.1/javax.transaction/javax.transaction-api/1.2/5d1fb3fe056fe51e6f6ed9b4ef4898a774ed69c0/javax.transaction-api-1.2-sources.jar">\r\n\t<attributes>\r\n\t\t<attribute name\="gradle_used_by_scope" value\="main,test"/>\r\n\t</attributes>\r\n</classpathentry>\r\n<classpathentry kind\="lib" path\="C\:/Users/SONY/OneDrive/Desktop/workspace-cpd/EquityRegionalCPD/jars/iBusJMS.jar">\r\n\t<attributes>\r\n\t\t<attribute name\="gradle_used_by_scope" value\="main,test"/>\r\n\t</attributes>\r\n</classpathentry>\r\n<classpathentry kind\="lib" path\="C\:/Users/SONY/OneDrive/Desktop/workspace-cpd/EquityRegionalCPD/jars/javaee.jar">\r\n\t<attributes>\r\n\t\t<attribute name\="gradle_used_by_scope" value\="main,test"/>\r\n\t</attributes>\r\n</classpathentry>\r\n<classpathentry kind\="lib" path\="C\:/Users/SONY/OneDrive/Desktop/workspace-cpd/EquityRegionalCPD/jars/QuoddFeed.jar">\r\n\t<attributes>\r\n\t\t<attribute name\="gradle_used_by_scope" value\="main,test"/>\r\n\t</attributes>\r\n</classpathentry>\r\n</classpath>\n
+derivedResources=.gradle;build
+gradleVersion=6.3
+hasAutoBuildTasks=false
+linkedResources=
+managedBuilders=<?xml version\="1.0" encoding\="UTF-8" standalone\="no"?><commands/>
+managedNatures=
+subprojectPaths=

@@ -1,0 +1,342 @@
+ <project name="tickerPlant" default="jar" basedir=".">
+
+    <property name="app.name"          value="ntp" />
+
+    <property name="home.dir"          value=".." />
+    <property name="jars.dir"          value="../jars"/>
+    <property name="src.dir"           value="../src" />
+    <property name="dist.dir"           value="./dist_1" />
+    <property name="classes.dir"       value="./classes" />
+   
+    <property name="build.sar.dir"     value="./sar-build"/>   
+    <property name="sar.dist.dir"      value="./dist"/>
+    <property name="jmx.dir"      value="../src/ntp/jmx/"/>
+   
+    <property file="build.properties"/>
+    <patternset id="java.files.pattern" includes="**/*.java"/>
+
+    <path id="compile.classpath">
+        <fileset dir="${jars.dir}" includes="**/*.jar"/>       
+
+        <pathelement location="${tacpoint.src.dir}"/>
+        <pathelement location="${b4utrade.src.dir}"/>
+
+    </path>
+
+    <property name="classpath" refid="compile.classpath" />
+
+    <!-- =================================================================== -->
+    <!-- Clean package                                                     -->
+    <!-- =================================================================== -->
+    <target name="clean">
+       
+        <delete dir="${dist.dir}"/>
+        <mkdir dir="${dist.dir}"/>
+
+        <delete dir="${classes.dir}"/>
+        <mkdir dir="${classes.dir}"/>
+       
+    </target>
+   
+    <!-- =================================================================== -->
+    <!-- Compile package                                                     -->
+    <!-- =================================================================== -->
+    <target name="compile" depends="clean">
+
+        <echo message="compile classpath: ${compile.classpath}" />
+	
+        <javac srcdir="${tacpoint.src.dir}"
+                           destdir="${classes.dir}"
+                           includes="com/tacpoint/common/DefaultObject.java"
+                           debug="true"
+                           classpath="${classpath}"       
+                    />
+                    
+         <!-- javac srcdir="${tacpoint.src.dir}"
+                               destdir="${classes.dir}"
+                               includes="com/tacpoint/backoffice/**,
+                                         com/tacpoint/dataconnection/**,
+                                         com/tacpoint/datafeed/**,
+                                         com/tacpoint/datafeedparser/**,
+                                         com/tacpoint/distributor/**,
+                                         com/tacpoint/date/**,
+                                         com/tacpoint/exception/**,
+                                         com/tacpoint/util/**"
+                                 excludes="com/tacpoint/util/DBSessionUtility.java,
+                                         com/tacpoint/util/EmailManager.java"                                       
+                               debug="true"
+                               classpath="${classpath}"       
+                        /-->
+       
+
+        <javac srcdir="${b4utrade.src.dir}"
+                                   destdir="${classes.dir}"
+                                   includes="com/b4utrade/bean/StockOptionBean.java,
+                                             com/b4utrade/bean/StockPriceBean.java,
+                                             com/b4utrade/bean/StockProfileBean.java"
+            excludes="ntp/level2/parser/**,
+            ntp/level2/collector/**"
+                                   debug="true"
+                                   classpath="${classpath}"       
+                            />
+       
+
+    </target>
+
+    <target name="jar" depends="compile">
+
+        <javac srcdir="${src.dir}"
+                   destdir="${classes.dir}"
+                   excludes="com/b4utrade/ejb/**,
+                   com/equitymontage/**,
+                   com/optionsregional/**,
+        			ntp/marketScanner/**"  
+                   debug="true" 
+                   classpath="${classpath}" 
+                />
+       
+        <jar jarfile="${dist.dir}/${app.name}.jar"
+             basedir="${classes.dir}"
+             includes="**"/>
+
+    </target>
+ 	
+ 	
+ 	
+ 	<target name="jar_withoutQuoddFeed" depends="compile">
+
+ 	        <javac srcdir="${src.dir}"
+ 	                   destdir="${classes.dir}"
+ 	                   excludes="com/b4utrade/ejb/**,
+ 	                   com/equitymontage/**,
+ 	                   com/optionsregional/**"  
+ 	                   debug="true" 
+ 	                   classpath="${classpath}" 
+ 	                />
+ 	       
+ 	        <jar jarfile="${dist.dir}/${app.name}.jar"
+ 	             basedir="${classes.dir}"
+ 	             includes="**"
+ 	        excludes="examples/**,
+     			QuoddFeed/**,
+     			ntp/ejb/**"/>
+
+ 	    </target>
+ 	
+ 	<target name="jar_QuoddFeed" depends="compile">
+
+ 	 	        <javac srcdir="${src.dir}"
+ 	 	                   destdir="${classes.dir}"
+ 	 	                   excludes="com/b4utrade/ejb/**,
+ 	 	                   com/equitymontage/**,
+ 	 	                   com/optionsregional/**,
+ 	 	        			ntp/marketScanner/**"  
+ 	 	                   debug="true" 
+ 	 	                   classpath="${classpath}" 
+ 	 	                />
+ 	 	       
+ 	 	        <jar jarfile="${dist.dir}/QuoddFeed.jar"
+ 	 	             basedir="${classes.dir}"
+ 	 	             includes="**"
+ 	 	        excludes="com**,
+ 	     			ntp**"/>
+
+ 	 	    </target>
+   
+
+      <!-- =================================================================== -->
+      <!-- Packages the sar file                                               -->
+      <!-- =================================================================== -->
+     
+    <target name="sar" depends="compile">
+           
+       <delete dir="${build.sar.dir}"/>
+       <delete dir="${build.classes.dir}"/>
+       
+       <mkdir dir="${build.sar.dir}"/>
+       <mkdir dir="${build.classes.dir}"/>
+       
+         <javac srcdir="${src.dir}"
+                destdir="${classes.dir}"
+                includes="**"
+                debug="true"
+                 classpath="${classpath}" />
+              
+            
+        <mkdir dir="${build.sar.dir}/META-INF"/>
+       
+        <copy file="${jmx.dir}/jboss-service.xml"
+              tofile="${build.sar.dir}/META-INF/jboss-service.xml" />
+                       
+        <jar jarfile="${build.sar.dir}/jmsTickerHouse.sar">
+             <fileset dir="${classes.dir}">
+                <include name="ntp/jmx/TickerHouseInitializer.class" />
+                <include name="ntp/jmx/TickerHouseInitializerMBean.class" />
+             </fileset>
+             <fileset dir="${build.sar.dir}">
+                <include name="META-INF/jboss-service.xml" />
+             </fileset>
+        </jar>
+       
+     </target>  
+   
+      <!-- =================================================================== -->
+      <!-- Packages the option/futures jar file                                -->
+      <!-- =================================================================== -->
+   
+    <target name="ejb_options" depends="compile">
+
+        <javac srcdir="${src.dir}"
+                   destdir="${classes.dir}"  
+                   debug="true" 
+                   includes="ntp/ejb/OptionsSnapEJB.java,
+                   ntp/ejb/OptionsSubscribeEJB.java"
+                   classpath="${classpath}" 
+                />
+                   
+        <jar jarfile="${dist.dir}/ejbOptions.jar"
+             basedir="${classes.dir}"
+            includes="ntp/ejb/**"/>
+
+    </target>
+    
+ 	<target name="ejb_tsq" depends="compile">
+
+ 	        <javac srcdir="${src.dir}"
+ 	                   destdir="${classes.dir}"  
+ 	                   debug="true" 
+ 	                   includes="com/b4utrade/ejb/TSQSubscriber.java,
+ 	                   com/b4utrade/ejb/TSQSubscriberBean.java"
+ 	                   classpath="${classpath}" 
+ 	                />
+ 	                   
+ 	        <jar jarfile="${dist.dir}/ejbTSQSubscriber.jar"
+ 	             basedir="${classes.dir}"
+ 	            includes="com/b4utrade/ejb/TSQSubscriber**"/>
+
+ 	    </target>
+ 	
+    <target name="ejb_futures" depends="compile">
+
+        <javac srcdir="${src.dir}"
+                   destdir="${classes.dir}"  
+                   debug="true" 
+                   includes="ntp/ejb/FuturesSnapEJB.java,
+                   ntp/ejb/FuturesSubscribeEJB.java"
+                   classpath="${classpath}" 
+                />
+                   
+        <jar jarfile="${dist.dir}/ejbFutures.jar"
+             basedir="${classes.dir}"
+            includes="ntp/ejb/**"/>
+
+    </target>
+
+    <target name="ejb_futures_options" depends="compile">
+
+        <javac srcdir="${src.dir}"
+                   destdir="${classes.dir}"  
+                   debug="true" 
+                   includes="ntp/ejb/FutureOptionsSnapEJB.java,
+                   ntp/ejb/FutureOptionsSubscribeEJB.java"
+                   classpath="${classpath}" 
+                />
+                   
+        <jar jarfile="${dist.dir}/ejbFutureOptions.jar"
+             basedir="${classes.dir}"
+            includes="ntp/ejb/**"/>
+
+    </target>
+    
+    <target name="ejb_regional_options" depends="compile">
+
+        <javac srcdir="${src.dir}"
+                   destdir="${classes.dir}"  
+                   debug="true" 
+                   includes="ntp/ejb/OptionsRegionalEJB.java"
+                   classpath="${classpath}" 
+                />
+                   
+        <jar jarfile="${dist.dir}/ejbRegionalOptions.jar"
+             basedir="${classes.dir}"
+            includes="ntp/ejb/**"/>
+
+    </target>
+    
+    <target name="ejb_regional_equity" depends="compile">
+
+        <javac srcdir="${src.dir}"
+                   destdir="${classes.dir}"  
+                   debug="true" 
+                   includes="ntp/ejb/EquityRegionalEJB.java"
+                   classpath="${classpath}" 
+                />
+                   
+        <jar jarfile="${dist.dir}/ejbRegionalEquity.jar"
+             basedir="${classes.dir}"
+            includes="ntp/ejb/**"/>
+
+    </target>
+    
+   
+      <!-- =================================================================== -->
+      <!-- Packages the level2 jar file                                -->
+      <!-- =================================================================== -->
+
+    <target name="ejb_level2" depends="compile">
+
+            <javac srcdir="${src.dir}"
+                       destdir="${classes.dir}"  
+                       debug="true" 
+                       includes="com/b4utrade/ejb/Level**,
+                       ntp/ejb/Level**"
+                       classpath="${classpath}" 
+                    />
+                       
+            <jar jarfile="${dist.dir}/level2Ejb.jar"
+                 basedir="${classes.dir}"
+                includes="com/b4utrade/ejb/**,
+                ntp/ejb/Level**"/>
+
+    </target>
+   
+   
+    <target name="corporate_cum_equityMontage_build" depends="compile">
+
+    <javac srcdir="${b4utrade.src.dir}"
+           destdir="${classes.dir}"
+           debug="true"
+       includes="com/b4utrade/bean/QTMessageBean.java,
+                 com/b4utrade/bean/InterestRateBean.java,
+                 com/b4utrade/bean/StockOptionBean.java,
+                 com/b4utrade/bean/StockPriceBean.java,
+                 com/b4utrade/bean/StockProfileBean.java,
+                 com/b4utrade/bean/TSQBean.java,
+                 com/b4utrade/helper/StockActivityHelper.java,
+                 com/b4utrade/util/MappedMessageQueue.java
+                 com/b4utrade/distributor/MM2BookAssembler.java,
+                 com/b4utrade/distributor/MM2MessageAggregator.java,
+                 com/b4utrade/distributor/MessageDispatcher.java,
+                 com/b4utrade/stockutil/MarketMakerActivity.java,
+                 com/b4utrade/bean/CorporateResultBean.java,
+                 com/b4utrade/corporate/CorporateActionReader.java,
+                 com/b4utrade/bo/CA**,
+                 com/b4utrade/util/CorporateActionException.java"
+          
+           classpath="${classpath}"       
+                                />
+               
+                <javac srcdir="${src.dir}"
+                           destdir="${classes.dir}"  
+                           debug="true" 
+                           includes="ntp/equityregional/**"                          
+                           classpath="${classpath}" 
+                        />
+                           
+                <jar jarfile="${dist.dir}/ntp_eq_regional_corp.jar"
+                     basedir="${classes.dir}"
+                    />
+
+            </target>
+</project>
+

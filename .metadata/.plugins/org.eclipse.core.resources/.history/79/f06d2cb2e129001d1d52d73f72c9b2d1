@@ -1,0 +1,615 @@
+package com.tacpoint.jms;
+
+import java.io.ByteArrayOutputStream;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.Properties;
+
+import javax.jms.BytesMessage;
+import javax.jms.Message;
+import javax.jms.MessageListener;
+import javax.jms.Topic;
+import javax.jms.TopicSession;
+import javax.jms.TopicSubscriber;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
+//import ch.softwired.jms.IBusJMSContext;
+//import ch.softwired.jms.IBusTopic;
+
+import com.tacpoint.publisher.TDispatcher;
+import com.tacpoint.publisher.TMessage;
+import com.tacpoint.publisher.TMessageQueue;
+
+public class QueuedJMSMessageConsumer extends Object implements Runnable, TConsumer
+{
+   private static Log log = LogFactory.getLog(QueuedJMSMessageConsumer.class);
+
+   private MessageHandler messageHandler = null;
+   private MessageReducer messageReducer = null;
+   private ReducedMessageInflator messageInflator = null;
+
+   private TMessageQueue queue;
+
+   private QueuedJMSMessageListener messageListenerP = null;
+
+   private String consumerName;
+
+   private String clientID;
+
+   private String topicName;
+
+   private String primaryIP;
+
+   private String qos;
+
+   private long aggregationTime = 0;
+
+   public void setAggregationTime(long at) {
+      this.aggregationTime = at;
+   }
+
+   public void setMessageQueue(TMessageQueue queue) {
+      this.queue = queue;
+   }
+
+   public void setConsumerName(String consumerName) {
+      this.consumerName = consumerName;
+   }
+
+   public void setQOS(String qos) {
+      this.qos = qos;
+   }
+
+   public void setMessageHandler(MessageHandler messageHandler) {
+      this.messageHandler = messageHandler;
+   }
+
+   public void setMessageReducer(MessageReducer messageReducer) {
+      this.messageReducer = messageReducer;
+   }
+
+   public void setMessageInflator(ReducedMessageInflator messageInflator) {
+      this.messageInflator = messageInflator;
+   }
+
+   public void setClientID(String clientID) {
+      this.clientID = clientID;
+   }
+
+   public void setTopicName(String topicName) {
+      this.topicName = topicName;
+   }
+
+   public void setPrimaryIP(String primaryIP) {
+      this.primaryIP = primaryIP;
+   }
+
+   public String  getConsumerName() {
+      return consumerName;
+   }
+
+   public String  getQOS() {
+      return qos;
+   }
+
+   public MessageHandler getMessageHandler() {
+      return messageHandler;
+   }
+
+   public MessageReducer getMessageReducer() {
+      return messageReducer;
+   }
+
+   public ReducedMessageInflator getMessageInflator() {
+      return messageInflator;
+   }
+
+   public String getPrimaryIP() {
+      return primaryIP;
+   }
+
+   public String getTopicName() {
+      return topicName;
+   }
+
+   public String getClientID() {
+      return clientID;
+   }
+
+   // constructor
+   public QueuedJMSMessageConsumer() throws Exception
+   {
+      // perform any necessary cleanup prior to shutting down!
+      try
+      {
+         Runtime.getRuntime().addShutdownHook(new Thread()
+         {
+            public void run()
+            {
+               System.exit(0);
+            }
+
+         });
+      } catch (Throwable e)
+      {
+         log.error("QueuedJMSMessageConsumer - Could not add shutdown hook", e);
+      }
+   }
+
+   public void run()
+   {
+      try
+      {
+
+         QueuedQuoteConsumer qcPrimary = null;
+
+         messageListenerP = new QueuedJMSMessageListener(aggregationTime);
+         messageListenerP.setMessageHandler(messageHandler);
+         messageListenerP.setMessageReducer(messageReducer);
+         messageListenerP.setMessageInflator(messageInflator);
+         messageListenerP.setMessageQueue(queue);
+         messageListenerP.setConsumerName(consumerName+"_P");
+
+         qcPrimary = new QueuedQuoteConsumer(clientID+"_P", primaryIP, topicName,messageListenerP, qos, consumerName+"_P");
+         messageListenerP.setPrevMsg(0);
+
+      }
+      catch (Exception e)
+      {
+         log.error("QueuedJMSMessageConsumer.run() " + e.getMessage());
+      }
+   }
+
+}
+
+class QueuedJMSMessageListener implements MessageListener
+{
+   private static Log log = LogFactory.getLog(QueuedJMSMessageListener.class);
+
+   private Properties props = new Properties();
+
+   private MessageHandler  messageHandler = null;
+   private MessageReducer  messageReducer = null;
+   private ReducedMessageInflator messageInflator = null;
+
+   byte[] bytes = new byte[1024];
+
+   private long beginTime = 0;
+   private long lastUpdateTime = 0;
+   private long lastResetTime = 0;
+   private int prevMsg=0;
+   private int currentMsg=0;
+   private int locallost=0;
+   private int localcount=0;
+
+   private long nonOptMsgByteCount;
+   private long optMsgByteCount;
+   private long binMsgByteCount;
+
+   private String consumerName=null;
+   private TMessageQueue messageQueue;
+   private String terminator = "?";
+
+   private long aggregationTime = 0;
+
+   private int msgCount = 0;
+
+   private QueueReleaser queueReleaser;
+   private Thread queueReleaserThread;
+
+   public MessageReducer getMessageReducer() {
+      return messageReducer;
+   }
+
+   public void setMessageReducer(MessageReducer messageReducer) {
+      this.messageReducer = messageReducer;
+      if (queueReleaser != null)
+         queueReleaser.setMessageReducer(messageReducer);
+   }
+
+   public void setMessageInflator(ReducedMessageInflator messageInflator) {
+      this.messageInflator = messageInflator;
+   }
+
+   public MessageHandler getMessageHandler() {
+      return messageHandler;
+   }
+
+   public void setMessageHandler(MessageHandler messageHandler) {
+      this.messageHandler = messageHandler;
+   }
+
+   public void setMessageQueue(TMessageQueue mq) {
+      this.messageQueue = mq;
+      if (queueReleaser != null)
+         queueReleaser.setMessageQueue(mq);
+   }
+
+   public long getLastUpdateTime() {
+      return lastUpdateTime;
+   }
+
+   public String getConsumerName() {
+      return consumerName;
+   }
+
+   public void setConsumerName(String consumerName) {
+      this.consumerName = consumerName;
+   }
+
+   public void setLastUpdateTime(long lastUpdateTime) {
+      this.lastUpdateTime = lastUpdateTime;
+   }
+
+   public int getPrevMsg() {
+      return prevMsg;
+   }
+
+   public void setPrevMsg(int prevMsg) {
+      this.prevMsg = prevMsg;
+   }
+
+   public QueuedJMSMessageListener(long aggregationTime)
+   {
+      this.aggregationTime = aggregationTime;
+
+      queueReleaser = new QueueReleaser();
+      queueReleaser.setAggregationTime(aggregationTime);
+
+      queueReleaserThread = new Thread(queueReleaser);
+      queueReleaserThread.start();
+   }
+
+   public void onMessage(Message m)
+   {
+      try
+      {
+         BytesMessage message=(BytesMessage)m;
+         currentMsg = message.readInt();
+
+         long currTime = System.currentTimeMillis();
+
+         lastUpdateTime = currTime;
+
+         if (currentMsg < 0) return;
+
+         if (currentMsg != (prevMsg+1)) {
+            locallost+=(currentMsg - prevMsg);
+         }
+
+         prevMsg = currentMsg;
+
+         localcount++;
+
+         if ( (currTime - beginTime) > 5000) {
+            int localsent = localcount+locallost;
+            double localconsumed = 1 - ((double)(locallost) / (double)(localsent));
+
+            int releasedCount = queueReleaser.getMsgCount();
+            queueReleaser.resetMsgCount();
+
+            log.debug(consumerName+" : Msgs sent: "+(localcount+locallost)+" Msgs received: "+ localcount+" consumed: "+localconsumed);
+            log.debug(consumerName+" : Msgs sent to queue : "+msgCount+" Aggregated msgs released : "+ releasedCount);
+            log.debug(consumerName+" : Decrease msg volume : "+(double)(msgCount - releasedCount)/(double)msgCount);
+            log.debug(consumerName+" : Non-Opt byte count : "+nonOptMsgByteCount+ " Opt byte count : "+optMsgByteCount+" Comp byte count : "+binMsgByteCount);
+            log.debug(consumerName+" : Decrease msg bytes (opt/non-opt): "+
+               (double)(nonOptMsgByteCount - optMsgByteCount)/(double)nonOptMsgByteCount);
+            log.debug(consumerName+" : Decrease msg bytes (comp/opt): "+
+               (double)(optMsgByteCount - binMsgByteCount)/(double)optMsgByteCount);
+
+            beginTime = currTime;
+            localcount=0;
+            locallost=0;
+            nonOptMsgByteCount = 0;
+            optMsgByteCount = 0;
+            binMsgByteCount = 0;
+            msgCount = 0;
+         }
+
+         TMessage msg = null;
+
+         if (messageHandler != null) {
+            msg = (TMessage)messageHandler.process(message);
+
+            //TDispatcher.SNAP_QUOTE_CACHE.put(msg.getKey(),msg);
+
+            if (!TDispatcher.MASTER_SUBSCRIPTIONS.containsKey(msg.getKey()))
+               return;
+
+         }
+         else {
+
+            int bytesRead = 0;
+            String topic = message.readUTF();
+
+            if (!TDispatcher.MASTER_SUBSCRIPTIONS.containsKey(topic))
+               return;
+
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+
+            while ((bytesRead = message.readBytes(bytes)) != -1)
+            {
+               baos.write(bytes,0,bytesRead);
+            }
+
+            if (messageReducer != null) {
+
+               ByteArrayOutputStream compactedBaos = messageReducer.reduceMessage(topic,baos.toByteArray());
+
+               if (compactedBaos == null)
+                  return;
+
+               nonOptMsgByteCount += baos.toByteArray().length;
+               optMsgByteCount += compactedBaos.toByteArray().length;
+
+               msg = new TMessage();
+               msg.setMap(messageReducer.parseKeyValues(compactedBaos));
+
+               compactedBaos.write(terminator.getBytes());
+               msg.setKey(topic);
+               msg.setBaos(compactedBaos);
+
+               if ( (currTime - lastResetTime) > 10000) {
+                  lastResetTime = currTime;
+                  messageReducer.resetAttribute("O" /* open price */,"N/A");
+                  messageReducer.resetAttribute("lp" /* last closed price */,"N/A");
+                  messageReducer.resetAttribute("sp" /* settlement price */,"N/A");
+               }
+            }
+            else {
+               baos.write(terminator.getBytes());
+               msg = new TMessage();
+               msg.setKey(topic);
+               msg.setBaos(baos);
+            }
+
+            //TDispatcher.SNAP_QUOTE_CACHE.put(msg.getKey(),msg);
+
+         }
+
+         msgCount++;
+
+         if (aggregationTime > 0) {
+            queueReleaser.add(msg);
+         }
+         else {
+            messageQueue.add(msg);
+         }
+
+      } catch(Exception e) {
+         log.error("QueuedJMSMessageConsumer.onMessage - Error encountered processing message.",e);
+      }
+   }
+}
+
+class QueuedQuoteConsumer
+{
+   private static Log log = LogFactory.getLog(QueuedQuoteConsumer.class);
+
+   TopicSession session = null;
+   Topic topic = null;
+   TopicSubscriber subscriber = null;
+   String client = null;
+   String consumerName = null;
+   MessageListener messageListener;
+
+   public QueuedQuoteConsumer(String clientID, String ip, String topicName, MessageListener messageListener,
+                        String qos, String consumerName)
+   {
+      client  = clientID;
+      this.consumerName = consumerName;
+      this.messageListener = messageListener;
+
+      log.debug("QueuedJMSMessageConsumer.QueuedQuoteConsumer -  **** Starting consumer : "+consumerName);
+      log.debug("QueuedJMSMessageConsumer.QueuedQuoteConsumer -  **** IP : \""+ip+"\"");
+
+      try {
+
+         int index = qos.indexOf("?");
+
+         if (index <= 0) {
+            log.debug("QueuedQuoteConsumer - "+consumerName+" unable to locate replacement character \"?\" for ip address swap.");
+            return;
+         }
+
+         String qualityOfService = qos.substring(0,index) + ip + qos.substring(index+1);
+
+         log.debug("QueuedQuoteConsumer - "+consumerName+" qos - "+qualityOfService);
+
+         //IBusJMSContext.getTopicConnection().setClientID(client);
+
+         session = IBusJMSContext.createTopicSession(false,TopicSession.AUTO_ACKNOWLEDGE);
+         topic = IBusJMSContext.getTopic(topicName);
+
+         ((IBusTopic)topic).setQOS(qualityOfService);
+
+         log.debug("QueuedQuoteConsumer -  **** Current thread count : "+Thread.activeCount());
+
+         subscriber = session.createSubscriber(topic);
+         subscriber.setMessageListener(messageListener);
+         IBusJMSContext.getTopicConnection().start();
+      }
+      catch (Exception e) {
+         log.error("QueuedQuoteConsumer - "+consumerName+" Error setting up JMS environment.",e);
+      }
+   }
+
+   public void stopConsumption()
+   {
+      try {
+         log.debug("QueuedQuoteConsumer.stopConsumption - "+consumerName+" **** Closing consumer : "+client);
+         subscriber.close();
+      }
+      catch (Exception e) {
+         log.error("QueuedQuoteConsumer.stopConsumption - "+consumerName+" Error encountered.",e);
+      }
+   }
+}
+
+class QueueReleaser implements Runnable {
+
+   long aggregationTime = 0;
+   TMessageQueue messageQueue;
+   MessageReducer messageReducer;
+   LinkedHashMap map = new LinkedHashMap();
+   Object lock = new Object();
+   TMessage prevMsg = null;
+
+   int msgCount = 0;
+
+
+   int dups = 0;
+   int additions = 0;
+
+   private static Log log = LogFactory.getLog(QueueReleaser.class);
+
+   public void setMessageQueue(TMessageQueue messageQueue) {
+      this.messageQueue = messageQueue;
+   }
+
+   public void setMessageReducer(MessageReducer messageReducer) {
+      this.messageReducer = messageReducer;
+   }
+
+   public void add(TMessage msg) {
+      synchronized(lock) {
+
+         additions++;
+
+
+         // **AK** 
+         /*
+         String ticker = (String)msg.getKey();
+         if (ticker != null) {
+            if (ticker.equals("EGN") || 
+                ticker.equals("END") || 
+                ticker.equals("EP")  || 
+                ticker.equals("EPD") || 
+                ticker.equals("EPE") ) {
+
+               System.out.println(new java.util.Date()+" QueueReleaser.add msg stream - "+new String(msg.getBaos().toByteArray()));
+            } 
+         }
+         */
+
+         if (messageReducer != null) {
+            prevMsg = (TMessage)map.get(msg.getKey());
+            if (prevMsg != null) {
+               dups++;
+               messageReducer.conflateReducedMessages(prevMsg.getBaos(), prevMsg.getMap(), msg.getMap());
+
+               // **AK** 
+               /*
+               if (ticker != null) {
+                  if (ticker.equals("EGN") || 
+                      ticker.equals("END") || 
+                      ticker.equals("EP")  || 
+                      ticker.equals("EPD") || 
+                      ticker.equals("EPE") ) {
+
+                     System.out.println(new java.util.Date()+" QueueReleaser.add post conflate - "+
+                                        new String(prevMsg.getBaos().toByteArray()));
+                  } 
+               }
+               */
+
+            }
+            else {
+               map.put(msg.getKey(),msg);
+            }
+         }
+         else {
+            if (map.containsKey(msg.getKey()))
+               dups++;
+            map.put(msg.getKey(),msg);
+         }
+      }
+   }
+
+   public void setAggregationTime(long at) {
+      this.aggregationTime = at;
+   }
+
+   public int getMsgCount() {
+      return msgCount;
+   }
+
+   public void resetMsgCount() {
+      msgCount = 0;
+   }
+
+   public void run() {
+
+      if (aggregationTime <= 0) {
+         log.error("Invalid aggregation time valie ["+aggregationTime+"] - must be greater than zero.");
+         return;
+      }
+
+      log.debug("Queue Releaser aggregation time : "+aggregationTime);
+
+      Iterator it = null;
+
+      long curTime = 0;
+      long beginTime = 0;
+
+      while (true) {
+
+         try {
+            Thread.sleep(aggregationTime);
+
+
+            if (map.size() > 0  && messageQueue != null) {
+               synchronized(lock) {
+                  it = map.values().iterator();
+                  while (it.hasNext()) {
+
+                     TMessage item = (TMessage)it.next();
+                     messageQueue.add(item);
+
+                     //messageQueue.add(it.next());
+                     msgCount++;
+
+                     // **AK** 
+                     /*
+                     String ticker = (String)item.getKey();
+
+                     if (ticker != null) {
+                        if (ticker.equals("EGN") || 
+                            ticker.equals("END") || 
+                            ticker.equals("EP")  || 
+                            ticker.equals("EPD") || 
+                            ticker.equals("EPE") ) {
+
+                           System.out.println(new java.util.Date()+" QueueReleaser.run - "+
+                                              new String(item.getBaos().toByteArray()));
+       
+                        } 
+                     }
+                     */
+                  }
+                  map.clear();
+               }
+            }
+
+            curTime = System.currentTimeMillis();
+            if ( (curTime - beginTime) > 5000) {
+               beginTime = curTime;
+               log.debug("Queue Releaser - number of records processed    : "+additions);
+               log.debug("Queue Releaser - number of duplicates discarded : "+dups);
+               log.debug("Queue Releaser - % decrease "+((double)dups/(double)additions));
+               dups = 0;
+               additions = 0;
+            }
+         }
+         catch (Exception ex) {
+            log.error("Unable to disperse messages from mapped queue - "+ex.getMessage(),ex);
+         }
+      }
+   }
+}
+
+
+
+

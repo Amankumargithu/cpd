@@ -1,0 +1,508 @@
+{
+	"info": {
+		"_postman_id": "fc5b0638-85df-4d53-a7dc-b2234e660be1",
+		"name": "AlertCPD",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "List Alerts By UserId",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{domain}}/alerts/alerts/list?user_id",
+					"host": [
+						"{{domain}}"
+					],
+					"path": [
+						"alerts",
+						"alerts",
+						"list"
+					],
+					"query": [
+						{
+							"key": "user_id",
+							"value": null
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Add User Alert",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n     \"tickerName\" : \".TIME\"  ,\r\n     \"webFlag\" : \"M2G\",\r\n     \"alertType\" : \"LO\",\r\n     \"lastOverAlertValue\" :  \"30.6\",\r\n    \"alertName\":  \"firstAlert\", \r\n    \"alertFrequency\"   : 1.1,\r\n    \"alarmTime\": \"03:24,AM\",\r\n    \"alertDetail\":\"Alert\",\r\n    \"alertComment\":\"comment\",\r\n    \"lastOverAlertActivity\":true,\r\n    \"lastUnderAlertActivity\":false,\r\n    \"lastEqualAlertActivity\":false,\r\n    \"percentChangeUpAlertActivity\":false,\r\n    \"percentChangeDownAlertActivity\":false,\r\n    \"bidOverAlertActivity\":false,\r\n    \"bidUnderAlertActivity\":false,\r\n    \"lastTradeVolumeEqualAlertActivity\":false,\r\n    \"lastTradeVolumeOverAlertActivity\":false,\r\n    \"lastTradeVolumeEqualOverAlertActivity\":false,\r\n    \"bidEqualAlertActivity\":false,\r\n    \"askOverAlertActivity\":false,\r\n    \"askUnderAlertActivity\":false,\r\n    \"askEqualAlertActivity\":false,\r\n    \"volumeOverAlertActivity\":false,\r\n    \"volumeEqualAlertActivity\":false,\r\n    \"volumeUnderAlertActivity\":false,\r\n    \"fiftyTwoWeekHighAlertActivity\":false,\r\n    \"fiftyTwoWeekLowAlertActivity\":false,\r\n    \"companyNewsAlertActivity\":false,\r\n    \"earningsReportedAlertActivity\":false\r\n   \r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{domain}}/alerts/alerts/add?user_id",
+					"host": [
+						"{{domain}}"
+					],
+					"path": [
+						"alerts",
+						"alerts",
+						"add"
+					],
+					"query": [
+						{
+							"key": "user_id",
+							"value": null
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "List Active Alerts By UserId",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{domain}}/alerts/alerts/list/active?user_id",
+					"host": [
+						"{{domain}}"
+					],
+					"path": [
+						"alerts",
+						"alerts",
+						"list",
+						"active"
+					],
+					"query": [
+						{
+							"key": "user_id",
+							"value": null
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Delete User Alert By Name",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{domain}}/alerts/alerts/delete?user_id&alert_name",
+					"host": [
+						"{{domain}}"
+					],
+					"path": [
+						"alerts",
+						"alerts",
+						"delete"
+					],
+					"query": [
+						{
+							"key": "user_id",
+							"value": null
+						},
+						{
+							"key": "alert_name",
+							"value": null
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "List Historical Alert",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{domain}}/alerts/historical/list?user_id&start_index&end_index",
+					"host": [
+						"{{domain}}"
+					],
+					"path": [
+						"alerts",
+						"historical",
+						"list"
+					],
+					"query": [
+						{
+							"key": "user_id",
+							"value": null
+						},
+						{
+							"key": "start_index",
+							"value": null
+						},
+						{
+							"key": "end_index",
+							"value": null
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Delete Historical Alert",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{domain}}/alerts/historical/delete?alert_id",
+					"host": [
+						"{{domain}}"
+					],
+					"path": [
+						"alerts",
+						"historical",
+						"delete"
+					],
+					"query": [
+						{
+							"key": "alert_id",
+							"value": null
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Count Historical Alerts By User",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{domain}}/alerts/historical/count?user_id",
+					"host": [
+						"{{domain}}"
+					],
+					"path": [
+						"alerts",
+						"historical",
+						"count"
+					],
+					"query": [
+						{
+							"key": "user_id",
+							"value": null
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get Fired User Alerts",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{domain}}/alerts/alerts/list/fired?user_id",
+					"host": [
+						"{{domain}}"
+					],
+					"path": [
+						"alerts",
+						"alerts",
+						"list",
+						"fired"
+					],
+					"query": [
+						{
+							"key": "user_id",
+							"value": null
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get Fired System Alerts",
+			"request": {
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "password",
+							"value": "No5jg3!85nf#",
+							"type": "string"
+						},
+						{
+							"key": "username",
+							"value": "quoddsystemalert",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{domain}}/alerts/systemalert/list/fired?user_id",
+					"host": [
+						"{{domain}}"
+					],
+					"path": [
+						"alerts",
+						"systemalert",
+						"list",
+						"fired"
+					],
+					"query": [
+						{
+							"key": "user_id",
+							"value": null
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get Active System Alert",
+			"request": {
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "password",
+							"value": "No5jg3!85nf#",
+							"type": "string"
+						},
+						{
+							"key": "username",
+							"value": "quoddsystemalert",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{domain}}/alerts/systemalert/list/active",
+					"host": [
+						"{{domain}}"
+					],
+					"path": [
+						"alerts",
+						"systemalert",
+						"list",
+						"active"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Add System Alert",
+			"request": {
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "password",
+							"value": "No5jg3!85nf#",
+							"type": "string"
+						},
+						{
+							"key": "username",
+							"value": "quoddsystemalert",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [],
+				"url": {
+					"raw": "{{domain}}/alerts/systemalert/add?alert_text&effective_date&expiry_date",
+					"host": [
+						"{{domain}}"
+					],
+					"path": [
+						"alerts",
+						"systemalert",
+						"add"
+					],
+					"query": [
+						{
+							"key": "alert_text",
+							"value": null
+						},
+						{
+							"key": "effective_date",
+							"value": null
+						},
+						{
+							"key": "expiry_date",
+							"value": null
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Delete System Alert",
+			"request": {
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "quoddsystemalert",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "No5jg3!85nf#",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{domain}}/alerts/systemalert/delete?system_alert_id",
+					"host": [
+						"{{domain}}"
+					],
+					"path": [
+						"alerts",
+						"systemalert",
+						"delete"
+					],
+					"query": [
+						{
+							"key": "system_alert_id",
+							"value": null
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Update System Alert",
+			"request": {
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "password",
+							"value": "No5jg3!85nf#",
+							"type": "string"
+						},
+						{
+							"key": "username",
+							"value": "quoddsystemalert",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Basic cXVvZGRzeXN0ZW1hbGVydDpObzVqZzMhODVuZiM=",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{domain}}/alerts/systemalert/update?system_alert_id&alert_text&effective_date&expiry_date",
+					"host": [
+						"{{domain}}"
+					],
+					"path": [
+						"alerts",
+						"systemalert",
+						"update"
+					],
+					"query": [
+						{
+							"key": "system_alert_id",
+							"value": null
+						},
+						{
+							"key": "alert_text",
+							"value": null
+						},
+						{
+							"key": "effective_date",
+							"value": null
+						},
+						{
+							"key": "expiry_date",
+							"value": null
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get Fired User Alerts",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "\r\n\r\n",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{domain}}/alerts/user/firedAlerts",
+					"host": [
+						"{{domain}}"
+					],
+					"path": [
+						"alerts",
+						"user",
+						"firedAlerts"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get Fired User Alerts Json",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{domain}}/alerts/user/firedAlerts/json?user_id",
+					"host": [
+						"{{domain}}"
+					],
+					"path": [
+						"alerts",
+						"user",
+						"firedAlerts",
+						"json"
+					],
+					"query": [
+						{
+							"key": "user_id",
+							"value": null
+						}
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}

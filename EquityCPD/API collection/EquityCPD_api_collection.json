@@ -1,0 +1,266 @@
+{
+	"info": {
+		"_postman_id": "3a761e94-1d4a-4cc0-9181-39d3d72287cc",
+		"name": "cpds Copy",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "eqcpd",
+			"item": [
+				{
+					"name": "List root",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{domain}}/eqcpd/list/root",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"eqcpd",
+								"list",
+								"root"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "unsubscribe ticker",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{domain}}/eqcpd/unsubscribe?ticker=MSFT",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"eqcpd",
+								"unsubscribe"
+							],
+							"query": [
+								{
+									"key": "ticker",
+									"value": "MSFT"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "List pending",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{domain}}/eqcpd/list/pending",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"eqcpd",
+								"list",
+								"pending"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Snap Dump",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{domain}}/eqcpd/snap/dump/312",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"eqcpd",
+								"snap",
+								"dump",
+								"312"
+							],
+							"query": [
+								{
+									"key": "",
+									"value": "",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Snap",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{domain}}/eqcpd/snap?ticker=MSFT&dataType=311",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"eqcpd",
+								"snap"
+							],
+							"query": [
+								{
+									"key": "ticker",
+									"value": "MSFT"
+								},
+								{
+									"key": "dataType",
+									"value": "311"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "List meta",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "{{domain}}/eqcpd/list/meta/311",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"eqcpd",
+								"list",
+								"meta",
+								"311"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "subscribe ticker",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{domain}}/eqcpd/subscribe?ticker=GE",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"eqcpd",
+								"subscribe"
+							],
+							"query": [
+								{
+									"key": "ticker",
+									"value": "GE"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "List image",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{domain}}/eqcpd/list/image",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"eqcpd",
+								"list",
+								"image"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Snap List",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\"AAPL\":[\"711\",\"712\"]}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{domain}}/eqcpd/snap/list",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"eqcpd",
+								"snap",
+								"list"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Stat",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{domain}}/eqcpd/stat",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"eqcpd",
+								"stat"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "List tier",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{domain}}/eqcpd/list/tier",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"eqcpd",
+								"list",
+								"tier"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}

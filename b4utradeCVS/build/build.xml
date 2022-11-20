@@ -1,0 +1,1651 @@
+<project name="b4utrade.project" default="all" basedir=".">
+
+  <!-- comment out when building for a 1.5+ env 
+
+  <property name="ant.build.javac.target" value="1.4"/> 
+  <property name="ant.build.javac.source" value="1.4"/> 
+-->    
+
+  <property name="app.name"           value="b4utrade"/>
+  
+  <property name="home.dir"           value=".." />    
+  <property name="jars.dir"           value="../jars" />
+  <property name="b4utrade.src.dir"   value="../src" />
+	<!--<property name="tacpoint.src.dir"   value="../src" />--> 
+
+  <property name="classes.dir"        value="./classes" />    
+  <property name="web.dir"            value="./web" />     
+  <property name="dist.dir"           value="./dist" /> 
+  <property file="build.properties"/> 
+	
+	
+
+	<path id="compile.classpath">
+
+	        <fileset dir="${jars.dir}">
+	            <include name="*.jar" />
+	        	<include name="netscape_js.zip" />
+	        </fileset>
+	 
+	 	    <pathelement location="${b4utrade.src.dir}"/>
+	        <pathelement location="${tacpoint.src.dir}"/>
+	        <pathelement location="${classes.dir}"/>
+	        <pathelement location="${home.dir}/admin/src"/>
+	    
+
+	 </path>
+
+	 <property name="classpath" refid="compile.classpath" />
+	
+  
+  
+  
+  <target name="init">
+      <echo message="Using base classpath=${classpath}" />
+      <echo message="Using Source directory=${b4utrade.src.dir}" />
+      <echo message="Using Tacpoint Source directory=${tacpoint.src.dir}" />
+  </target>    
+
+  <!-- =================================================================== -->   
+  <!-- Clean build  -->
+  <!-- =================================================================== -->  
+  <target name="clean" depends="init">
+  
+    <delete dir="${classes.dir}"/>
+    <mkdir  dir="${classes.dir}"/>
+    
+    <delete dir="${dist.dir}"/>
+    <mkdir dir="${dist.dir}"/>
+  	<mkdir dir="${web.dir}/${app.name}/images/quodd/images"/>
+    
+    <delete dir="${web.dir}"/>
+    <mkdir dir="${web.dir}/${app.name}"/>
+    <mkdir dir="${web.dir}/${app.name}/WEB-INF"/> 
+    <mkdir dir="${web.dir}/${app.name}/WEB-INF/classes"/>
+    <mkdir dir="${web.dir}/${app.name}/WEB-INF/lib"/>
+	<mkdir dir="${web.dir}/${app.name}/images/quodd/images"/>
+ 
+    <mkdir dir="${web.dir}/adminAPI"/>
+    <mkdir dir="${web.dir}/adminAPI/WEB-INF"/> 
+    <mkdir dir="${web.dir}/adminAPI/WEB-INF/classes"/>
+    <mkdir dir="${web.dir}/adminAPI/WEB-INF/lib"/>
+ 
+    <mkdir dir="${web.dir}/rtm"/>
+    <mkdir dir="${web.dir}/rtm/WEB-INF"/> 
+    <mkdir dir="${web.dir}/rtm/WEB-INF/classes"/>
+    <mkdir dir="${web.dir}/rtm/WEB-INF/lib"/>
+
+    <mkdir dir="${web.dir}/community"/>
+    <mkdir dir="${web.dir}/community/WEB-INF"/> 
+    <mkdir dir="${web.dir}/community/WEB-INF/classes"/>
+    <mkdir dir="${web.dir}/community/WEB-INF/lib"/>
+    
+    <mkdir dir="${web.dir}/snap"/>
+    <mkdir dir="${web.dir}/snap/WEB-INF"/> 
+    <mkdir dir="${web.dir}/snap/WEB-INF/classes"/>
+    <mkdir dir="${web.dir}/snap/WEB-INF/lib"/>
+
+    <mkdir dir="${web.dir}/applet"/>
+    <mkdir dir="${web.dir}/applet/props"/> 
+    <mkdir dir="${web.dir}/applet/WEB-INF"/> 
+    <mkdir dir="${web.dir}/applet/WEB-INF/classes"/>
+    <mkdir dir="${web.dir}/applet/WEB-INF/lib"/>
+    
+  </target>   
+
+  <!-- =================================================================== -->
+  <!-- compiles all *streamer* related files                               -->
+  <!-- =================================================================== -->
+  <target name="streamer" depends="clean">       
+               
+      <javac srcdir="${tacpoint.src.dir}" 
+           destdir="${classes.dir}" 
+           excludes="com/tacpoint/network/*Soap*"
+           debug="true"
+           classpath="${classpath}"        
+      />    
+      
+      <javac srcdir="${b4utrade.src.dir}" 
+           destdir="${classes.dir}" 
+                excludes="com/b4utrade/alert/**,
+                          com/b4utrade/backoffice/**,
+                          com/b4utrade/datafeed/**,
+                          com/b4utrade/datafeedparser/**,
+                          com/b4utrade/network/NetworkStreamer.java,
+                          com/b4utrade/distributor/**,
+                          com/b4utrade/web/**,
+                          com/netscape/**,
+      					  com/CSPRelay/**,
+      					  com/paxcel/**,
+      	com/b4utrade/helper/DowJonesRetransmission.java"
+           debug="true"
+           classpath="${classpath}"        
+      />   
+      
+      <jar destfile="${dist.dir}/b4utrade_com.jar"
+          basedir="${classes.dir}" includes="**"/>  
+     
+      
+           
+          
+  </target>
+  
+
+  <!-- =================================================================== -->
+  <!-- compiles all *treasury notes* related files                               -->
+  <!-- =================================================================== -->
+  <target name="treasuries" depends="clean">       
+               
+      <javac srcdir="${tacpoint.src.dir}" 
+           destdir="${classes.dir}" 
+           excludes="com/tacpoint/network/*Soap*,
+	             com/tacpoint/http/*15*"
+           debug="true"
+           classpath="${classpath}"        
+      />    
+      
+      <javac srcdir="${b4utrade.src.dir}" 
+           destdir="${classes.dir}" 
+                includes="com/b4utrade/treasuries/**"
+           debug="true"
+           classpath="${classpath}"        
+      />   
+      
+      <jar destfile="${dist.dir}/treasuries.jar"
+          basedir="${classes.dir}" includes="**"/>  
+          
+          
+      <copy file="${b4utrade.src.dir}/com/b4utrade/treasuries/street_software.csv" todir="${dist.dir}" />     
+     
+      
+           
+          
+  </target>
+  
+  <!-- =================================================================== -->
+  <!-- compiles all *resin* related files                               -->
+  <!-- =================================================================== -->
+  <target name="resin" depends="clean">       
+               
+      <javac srcdir="${tacpoint.src.dir}" 
+           destdir="${classes.dir}" 
+           excludes="com/tacpoint/network/*Soap*,
+	             com/tacpoint/http/*15*"
+           debug="true"
+           classpath="${classpath}"        
+      /> 
+  	      
+      <javac srcdir="${b4utrade.src.dir}" 
+           destdir="${classes.dir}" 
+                excludes="com/b4utrade/datafeed/**,
+                          com/b4utrade/alert/JMSAlertServer.java,
+                          com/b4utrade/datafeedparser/**,
+                          com/b4utrade/distributor/**,
+                          com/b4utrade/web/**,
+                          com/b4utrade/network/QTMessageReducer*,
+                          com/b4utrade/util/TickerExchangeLookup.java,
+                          com/netscape/**,
+      						com/CSPRelay/**,
+      						com/paxcel/**,
+    	com/b4utrade/helper/DowJonesRetransmission.java,
+      	com/b4utrade/ejb/Level2SubscriberBean.java"
+           debug="true"
+           classpath="${classpath}"        
+      />   
+      
+      <jar destfile="${dist.dir}/b4utrade_com.jar"
+          basedir="${classes.dir}" includes="**"/>  
+     
+      
+           
+          
+  </target>
+  
+
+  <!-- =================================================================== -->
+  <!-- compiles all *alerts* related files                                 -->
+  <!-- =================================================================== -->
+  <target name="alerts" depends="clean">       
+               
+      <javac srcdir="${tacpoint.src.dir}" 
+           destdir="${classes.dir}" 
+           excludes="com/tacpoint/network/*Soap*,
+	             com/tacpoint/http/*15*,
+      	com/tacpoint/publisher/TMessageQueue.java"
+           debug="true"
+           classpath="${classpath}"        
+      />    
+      
+      <javac srcdir="${b4utrade.src.dir}" 
+           destdir="${classes.dir}" 
+                excludes="com/b4utrade/backoffice/**,
+      					  com/CSPRelay/**,
+                          com/b4utrade/web/**,
+                          com/b4utrade/distributor/**,
+                          com/b4utrade/tsq/**,
+      	                  com/b4utrade/util/TickerExchangeLookup.java,
+                          com/b4utrade/network/QTMessageReducer.java,
+      	      			  com/b4utrade/datafeedparser/ComtexXMLParser.java,
+      	      			  com/b4utrade/datafeedparser/ComtexNewsroomsXMLParser.java,
+                          com/netscape/**,
+      	com/b4utrade/helper/DowJonesMessageBatcher,
+      	com/b4utrade/helper/DowJonesRe**,
+      	com/b4utrade/distributor/MM2MessageQueue.java,
+      	com/b4utrade/stockutil/MarketMakerOrderManager.java,
+      	com/b4utrade/publisher**,
+      	com/b4utrade/bean/MM2MessageBean,
+      	com/b4utrade/datafeed/ComstockDataFeed.java,
+      	com/b4utrade/datafeed/ComStockDailyData.java,
+      	com/b4utrade/stockutil/MarketMakerOrderManager.java,
+      	com/b4utrade/ejb/**,
+      	com/paxcel/**"
+           debug="true"
+           classpath="${classpath}"        
+      />   
+      
+      <jar destfile="${dist.dir}/b4utrade_com.jar"
+          basedir="${classes.dir}" includes="**"/>  
+     
+      
+           
+          
+  </target>
+  
+  <!-- =================================================================== -->
+  <!-- compiles all *C/P/D* related files                               -->
+  <!-- =================================================================== -->
+  <target name="datafeed" depends="clean">       
+               
+      <javac srcdir="${tacpoint.src.dir}" 
+           destdir="${classes.dir}" 
+           excludes="com/tacpoint/network/*Soap*,
+	             com/tacpoint/http/*15*"
+           debug="true"
+           classpath="${classpath}"        
+      />    
+      
+      <javac srcdir="${b4utrade.src.dir}" 
+           destdir="${classes.dir}" 
+                excludes="com/b4utrade/alert/**,
+                          com/b4utrade/backoffice/**,
+                          com/b4utrade/web/**,
+                          com/b4utrade/network/**,
+                          com/netscape/**"
+           debug="true"
+           classpath="${classpath}"        
+      />   
+      
+      <jar destfile="${dist.dir}/b4utrade_com.jar"
+          basedir="${classes.dir}" includes="**"/>       
+           
+          
+  </target>
+  
+    
+  <!-- =================================================================== -->
+  <!-- compiles all *C/P/D* related files                               -->
+  <!-- =================================================================== -->
+  <target name="tsq_jboss_datafeed" depends="clean">       
+               
+      <javac srcdir="${tacpoint.src.dir}" 
+           destdir="${classes.dir}" 
+           excludes="com/tacpoint/network/*Soap*,
+	             com/tacpoint/http/*15*"
+           debug="true"
+           classpath="${classpath}"        
+      />    
+      
+      <javac srcdir="${b4utrade.src.dir}" 
+           destdir="${classes.dir}" 
+                excludes="com/b4utrade/alert/**,
+                          com/b4utrade/backoffice/**,
+                          com/b4utrade/distributor/JMSStockQuoteProducer.java,
+                          com/b4utrade/util/TickerExchangeLookup.java,
+                          com/b4utrade/datafeedparser/ComstockDispatcher.java,
+                          com/b4utrade/datafeedparser/ComstockThreadedParser.java,
+                          com/b4utrade/web/**,
+                          com/b4utrade/network/**,
+                          com/netscape/**"
+           debug="true"
+           classpath="${classpath}"        
+      />   
+      
+      <jar destfile="${dist.dir}/b4utrade_com.jar"
+          basedir="${classes.dir}" includes="**"/>       
+           
+          
+  </target>
+  
+  
+  <!-- =================================================================== -->
+  <!-- compiles MM2 related files for JBoss                                -->
+  <!-- =================================================================== -->
+  <target name="mm2" depends="clean">       
+               
+      <javac srcdir="${tacpoint.src.dir}" 
+           destdir="${classes.dir}" 
+           excludes="com/tacpoint/network/*Soap*,
+	             com/tacpoint/http/*15*"
+           debug="true"
+           classpath="${classpath}"        
+      />    
+      
+      <javac srcdir="${b4utrade.src.dir}" 
+           destdir="${classes.dir}" 
+                excludes="com/b4utrade/alert/**,
+                          com/b4utrade/backoffice/**,
+                          com/b4utrade/distributor/**,
+                          com/b4utrade/web/**,
+                          com/b4utrade/network/**,
+                          com/netscape/**"
+           debug="true"
+           classpath="${classpath}"        
+      />   
+      
+      <jar destfile="${dist.dir}/b4utrade_com.jar"
+          basedir="${classes.dir}" includes="**"/>  
+     
+      
+           
+          
+  </target>
+  
+   <!-- =================================================================== -->
+  <!-- compiles all *C/P/D* related files                               -->
+  <!-- =================================================================== -->
+  <!--
+  <target name="datafeed_tsq_jboss" depends="clean">       
+               
+      <javac srcdir="${tacpoint.src.dir}" 
+           destdir="${classes.dir}" 
+           excludes="com/tacpoint/network/*Soap*,
+	             com/tacpoint/http/*15*"
+           debug="true"
+           classpath="${classpath}"        
+      />    
+      
+      <javac srcdir="${b4utrade.src.dir}" 
+           destdir="${classes.dir}" 
+                excludes="com/b4utrade/alert/**,
+                          com/b4utrade/backoffice/**,
+                          com/b4utrade/distributor/JMSStockQuoteProducer.java,
+                          com/b4utrade/web/**,
+                          com/b4utrade/network/**,
+                          com/netscape/**"
+           debug="true"
+           classpath="${classpath}"        
+      />   
+      
+      <jar destfile="${dist.dir}/b4utrade_com.jar"
+          basedir="${classes.dir}" includes="**"/>  
+     
+      
+           
+          
+  </target>
+  -->
+  
+
+  <!-- =================================================================== -->
+  <!-- Packages the all relevant .sar files                                -->
+  <!-- =================================================================== -->
+  <target name="sar" depends="init">
+        
+     <ant antfile="build.xml" dir="${b4utrade.src.dir}/com/b4utrade/jmx" target="service-sar" inheritAll="yes"/>             
+        
+  </target>
+
+  <!-- =================================================================== -->
+  <!-- Packages the alerts EJB jar file                                    -->
+  <!-- =================================================================== -->
+  <target name="ejb-alerts" depends="init">
+        
+     <ant antfile="build.xml" dir="${b4utrade.src.dir}/com/b4utrade/ejb" target="alerts" inheritAll="yes"/>             
+        
+  </target>
+
+  <!-- =================================================================== -->
+  <!-- Packages the MM2 data EJB jar file                                  -->
+  <!-- =================================================================== -->
+  <target name="ejb-mm2-data" depends="init">
+        
+     <ant antfile="build.xml" dir="${b4utrade.src.dir}/com/b4utrade/ejb" target="mm2" inheritAll="yes"/>             
+        
+  </target>
+
+	
+  <!-- =================================================================== -->
+  <!-- Packages the options data EJB jar file                              -->
+  <!-- =================================================================== -->
+  <target name="ejb-options-all" depends="init">
+        
+     <ant antfile="build.xml" dir="${b4utrade.src.dir}/com/b4utrade/ejb" target="options" inheritAll="yes"/>             
+        
+  </target>
+
+  <!-- =================================================================== -->
+  <!-- Packages the news cache data EJB jar file                              -->
+  <!-- =================================================================== -->
+  <target name="ejb-news-data" depends="init">
+        
+     <ant antfile="build.xml" dir="${b4utrade.src.dir}/com/b4utrade/ejb" target="news" inheritAll="yes"/>             
+        
+  </target>
+	
+	<!-- =================================================================== -->
+	  <!-- Packages the news cache data EJB jar file                              -->
+	  <!-- =================================================================== -->
+	  <target name="ejb-edge-news-data" depends="init">
+	        
+	     <ant antfile="build.xml" dir="${b4utrade.src.dir}/com/b4utrade/ejb" target="edgenews" inheritAll="yes"/>             
+	        
+	  </target>
+	  <!-- =================================================================== -->
+	  <!-- Packages the NB cache data EJB jar file                              -->
+	  <!-- =================================================================== -->
+	  <target name="ejb-nb-volume-data" depends="init">
+	        
+	     <ant antfile="build.xml" dir="${b4utrade.src.dir}/com/b4utrade/ejb" target="NBVolumeData" inheritAll="yes"/>             
+	        
+	  </target>
+ 
+  <!-- =================================================================== -->
+  <!-- Packages the news cache data EJB jar file                           -->
+  <!-- =================================================================== -->
+  <target name="ejb-fundamental-data" depends="init">	        	     
+  	<ant antfile="build.xml" dir="${b4utrade.src.dir}/com/b4utrade/ejb" target="fundamentalData" inheritAll="yes"/>             	        
+  </target>
+ 
+  <!-- =================================================================== -->
+  <!-- Packages the ticker exclusion data EJB jar file                     -->
+  <!-- =================================================================== -->
+	  <target name="ejb-ticker-exclusion-data" depends="init">	        	     
+	  	<ant antfile="build.xml" dir="${b4utrade.src.dir}/com/b4utrade/ejb" target="tickerExclusionListData" inheritAll="yes"/>             	        
+	  </target>
+	
+   <!-- =================================================================== -->
+  <!-- Packages the spot symbol EJB jar file                           -->
+  <!-- =================================================================== -->
+  <target name="ejb-spotsymbol" depends="init">	        	     
+  <ant antfile="build.xml" dir="${b4utrade.src.dir}/com/b4utrade/ejb" target="spotsymbol" inheritAll="yes"/>             	        
+  </target>
+ 
+ 
+  <!-- =================================================================== -->
+  <!-- Packages the TSQ related EJB jar files                              -->
+  <!-- =================================================================== -->
+  <target name="ejb-tsq-data" depends="init">	        	     
+    <ant antfile="build.xml" dir="${b4utrade.src.dir}/com/b4utrade/ejb" target="tsq" inheritAll="yes"/>             	        
+  </target>
+	
+      	<!-- =================================================================== -->
+      	  <!-- Packages the ticker lookup related EJB jar files                              -->
+      	  <!-- =================================================================== -->
+      	  <target name="ejb-ticker-lookup" depends="init">	        	     
+      	    <ant antfile="build.xml" dir="${b4utrade.src.dir}/com/b4utrade/ejb" target="tickerLookUpData" inheritAll="yes"/>             	        
+      	  </target>
+	
+  <!-- =================================================================== -->
+  <!-- Creates the package jar archive                                     -->
+  <!-- =================================================================== -->
+  <target name="jar" depends="compile">
+    
+    <jar jarfile="${web.dir}/${app.name}/WEB-INF/lib/${app.name}-war-classes.jar"
+         basedir="${classes.dir}"
+         includes="com/"
+    />      
+               
+  </target> 
+
+  <!-- =================================================================== -->
+  <!-- Creates the package jar archive                                     -->
+  <!-- =================================================================== -->
+  <target name="admin_jar" depends="admin_compile">
+    
+    <jar jarfile="${web.dir}/adminAPI/WEB-INF/lib/adminAPI-war-classes.jar"
+         basedir="${classes.dir}"
+         includes="com/"
+    />      
+  </target> 
+  
+  <!-- =================================================================== -->
+  <!-- Creates the package jar archive                                     -->
+  <!-- =================================================================== -->
+  <target name="rtm_jar" depends="rtm_compile">
+    
+    <jar jarfile="${web.dir}/rtm/WEB-INF/lib/rtm-war-classes.jar"
+         basedir="${classes.dir}"
+         includes="com/"
+    />                     
+  </target> 
+
+  <!-- =================================================================== -->
+  <!-- Creates the package jar archive                                     -->
+  <!-- =================================================================== -->
+  <target name="community_jar" depends="community_compile">
+
+    <jar jarfile="${web.dir}/community/WEB-INF/lib/community-war-classes.jar"
+         basedir="${classes.dir}"
+         includes="com/"
+    />      
+  </target> 
+
+
+  <!-- =================================================================== -->
+  <!-- Creates the package jar archive                                     -->
+  <!-- =================================================================== -->
+  <target name="snap_jar" depends="snap_compile">
+    
+    <jar jarfile="${web.dir}/snap/WEB-INF/lib/snap-war-classes.jar"
+         basedir="${classes.dir}"         
+    />                     
+  </target> 
+
+  <!-- =================================================================== -->
+  <!-- Creates the package jar archive                                     -->
+  <!-- =================================================================== -->
+  <target name="applet_jar" depends="applet_compile">
+  
+  
+    <!--
+      The QUODD / B4UTrade applets use the Netscape JS* classes.  We've only included the *necessary* 
+      files for efficiency
+    -->
+    
+    <mkdir  dir="${classes.dir}/netscape"/>
+    <mkdir  dir="${classes.dir}/netscape/javascript"/>
+    
+    <copy todir="${classes.dir}/netscape/javascript">         
+      <fileset dir="${home.dir}/applets/netscape"/>         
+    </copy>      
+    
+    <jar jarfile="${web.dir}/applet/b4utrade.jar"
+         basedir="${classes.dir}"
+         includes="com/,
+                   netscape/"         
+    />       
+  </target> 
+  
+  
+  <!-- =================================================================== -->
+  <!-- Compile package                                                     -->
+  <!-- =================================================================== -->
+  <target name="compile" depends="clean">
+  
+    <echo message="compile classpath: ${classpath}"/>
+ 
+    <javac srcdir="${tacpoint.src.dir}" 
+           destdir="${classes.dir}" 
+           excludes="com/tacpoint/network/*Soap*,
+                     com/tacpoint/http/HttpRequestExecutor15.java,
+    				com/tacpoint/publisher/TMessageQueue.java"
+           debug="true"
+           classpath="${classpath}"        
+    />     
+    
+
+	
+    <javac srcdir="${b4utrade.src.dir}" 
+           destdir="${classes.dir}" 
+           excludes="com/b4utrade/alert/**,
+    				 com/CSPRelay/**,
+                     com/b4utrade/backoffice/**,
+                     com/b4utrade/jmx/**,
+    				com/b4utrade/ejb/Level2SubscriberBean.java,
+                     com/b4utrade/datafeed/**,
+                     com/b4utrade/datafeedparser/**,
+                     com/b4utrade/distributor/**,
+                     com/b4utrade/jni/**,
+                     com/b4utrade/hyperfeed/**,
+                     com/b4utrade/publisher/**,
+                     com/b4utrade/helper/QuoteServerHelper.*,
+                     com/b4utrade/sevlet/**,
+                     com/b4utrade/selector/MM2Selector.*,
+                     com/b4utrade/network/Compress*,
+                     com/b4utrade/network/QTMessageReducer*,
+                     com/b4utrade/util/TickerExchangeLookup.java,
+                     com/netscape/**,
+    				com/paxcel/process/**,
+	com/b4utrade/helper/DowJonesRetransmission.java"
+           debug="true"
+           classpath="${classpath}"        
+    />         
+       
+  </target>
+
+  <!-- =================================================================== -->
+  <!-- Compile package                                                     -->
+  <!-- =================================================================== -->
+  <target name="options_jar_all" depends="clean">
+  
+    <echo message="compile classpath: ${classpath}"/>
+ 
+    <javac srcdir="${tacpoint.src.dir}" 
+           destdir="${classes.dir}" 
+           excludes="com/tacpoint/http/*15*,
+                     com/tacpoint/network/*Soap*"
+           debug="true"
+           classpath="${classpath}"        
+    />     
+    
+    <javac srcdir="${b4utrade.src.dir}" 
+           destdir="${classes.dir}" 
+           excludes="com/b4utrade/alert/**,
+                     com/b4utrade/backoffice/**,
+                     com/b4utrade/datafeed/**,
+                     com/b4utrade/datafeedparser/**,
+                     com/b4utrade/publisher/**,
+                     com/b4utrade/web/**,
+    	             com/b4utrade/hyperfeed/**,
+                     com/netscape/**,
+    				 com/CSPRelay/**,
+    	             com/b4utrade/ejb/**,
+      				 com/paxcel/process/**
+    	,com/optionsregional/ejb/**,
+      	com/b4utrade/helper/DowJonesRetransmission.java"
+           debug="true"
+           classpath="${classpath}"   
+
+     />
+     
+     <jar  destfile="${dist.dir}/b4utrade_com.jar"
+           basedir="${classes.dir}" includes="**"/>        
+          
+     <copy file="${home.dir}/properties/hyperfeed_objectpool_manager.properties" tofile="${dist.dir}/objectpool_manager.properties" />     
+       
+  </target>
+  
+
+  <!-- =================================================================== -->
+  <!-- Compile package                                                     -->
+  <!-- =================================================================== -->
+  <target name="wedbush_snap_file" depends="clean">
+  
+    <echo message="compile classpath: ${classpath}"/>
+ 
+ 
+    <javac srcdir="${tacpoint.src.dir}" 
+           destdir="${classes.dir}" 
+           excludes="com/tacpoint/http/*15*,
+                     com/tacpoint/network/*Soap*"
+           debug="true"
+           classpath="${classpath}"        
+    />     
+
+    <javac srcdir="${b4utrade.src.dir}" 
+           destdir="${classes.dir}" 
+           excludes="com/b4utrade/alert/**,
+                     com/b4utrade/backoffice/**,
+                     com/b4utrade/datafeed/**,
+                     com/b4utrade/datafeedparser/**,
+                     com/b4utrade/distributor/**,
+                     com/b4utrade/publisher/**,
+                     com/b4utrade/web/**,
+                     com/b4utrade/network/QTMessageReducer.java,
+                     com/netscape/**"
+           debug="true"
+           classpath="${classpath}"   
+
+     />
+
+     
+     <jar  destfile="${dist.dir}/b4utrade_com.jar"
+           basedir="${classes.dir}" includes="**"/>        
+          
+     <copy file="${home.dir}/properties/wedbush_option_snaps.properties" tofile="${dist.dir}/option_snaps.properties" />   
+     <copy file="${home.dir}/properties/wedbush_equity_snaps.properties" tofile="${dist.dir}/equity_snaps.properties" />   
+       
+  </target>
+
+  <!-- =================================================================== -->
+  <!-- Compile package                                                     -->
+  <!-- =================================================================== -->
+  <target name="djnews" depends="clean">
+  
+    <echo message="compile classpath: ${classpath}"/>
+ 
+ 
+    <javac srcdir="${tacpoint.src.dir}" 
+           destdir="${classes.dir}" 
+           excludes="com/tacpoint/http/*15.java,
+                     com/tacpoint/network/*Soap*"
+           debug="true"
+           classpath="${classpath}"        
+    />     
+
+    <javac srcdir="${b4utrade.src.dir}" 
+           destdir="${classes.dir}" 
+           excludes="com/b4utrade/alert/**,
+                     com/b4utrade/backoffice/**,,
+                     com/b4utrade/web/**,
+                     com/netscape/**, 
+				     com/CSPRelay/**,
+				     com/b4utrade/distributor/JMSStockQuoteProducer.java,
+				     com/b4utrade/datafeedparser/ComtexXMLParser.java,
+				     com/b4utrade/datafeedparser/ComtexNewsroomsXMLParser.java,
+    				 com/paxcel/**"    				
+			    	
+           debug="true"
+           classpath="${classpath}"   
+
+     />
+
+     
+         
+     <jar  destfile="${dist.dir}/b4utrade_com.jar"
+           basedir="${classes.dir}" includes="**"/>        
+          
+           
+  </target>
+  
+
+  <!-- =================================================================== -->
+  <!-- Compile package                                                     -->
+  <!-- =================================================================== -->
+  <target name="snap_compile" depends="clean">
+  
+    <echo message="compile classpath: ${classpath}"/>
+ 
+    <javac srcdir="${tacpoint.src.dir}" 
+           destdir="${classes.dir}" 
+           excludes="com/tacpoint/network/*Soap*"
+           debug="true"
+           classpath="${classpath}"        
+    />     
+    
+    <javac destdir="${classes.dir}" 
+           debug="true"
+           classpath="${classpath}">           
+           
+           <exclude name="com/b4utrade/publisher/**"/>
+           <exclude name="com/b4utrade/web/**"/>
+           <exclude name="com/netscape/**"/>
+           <exclude name="com/b4utrade/alert/**"/>
+           <exclude name="com/b4utrade/datafeed/**"/>
+           <exclude name="com/b4utrade/datafeedparser/**"/>
+           <exclude name="com/b4utrade/jni/**"/>
+           <exclude name="com/b4utrade/hyperfeed/**"/>                     
+ 
+           <src path="${b4utrade.src.dir}"/>
+ 
+    </javac>  
+
+    <javac destdir="${classes.dir}" 
+           debug="true"
+           classpath="${classpath}">           
+           
+           <include name="com/b4utrade/alert/AlertClientServer.java"/>
+ 
+           <src path="${b4utrade.src.dir}"/>
+ 
+    </javac>  
+    
+    <javac destdir="${classes.dir}" 
+           debug="true"
+           classpath="${classpath}">                     
+ 
+           <src path="${home.dir}/servlets"/>
+ 
+    </javac>  
+   
+       
+  </target>
+
+  <!-- =================================================================== -->
+  <!-- Compile package                                                     -->
+  <!-- =================================================================== -->
+  <target name="dde" depends="clean">
+  
+    <echo message="compile classpath: ${classpath}"/>
+    
+ 
+
+    <javac destdir="${classes.dir}" 
+           debug="true"
+           classpath="${classpath}">     
+     
+           <include name="com/tacpoint/common/DefaultObject.java"/>
+           <include name="com/tacpoint/dataaccess/DefaultBusinessObject.java"/>
+           <include name="com/tacpoint/exception/BusinessException.java"/>
+           <include name="com/tacpoint/exception/DefaultException.java"/>
+           <include name="com/tacpoint/exception/NoDataFoundException.java"/>
+           <include name="com/tacpoint/gui/Alert.java"/>
+           <include name="com/tacpoint/gui/SingleInputFrame.java"/>
+           <include name="com/tacpoint/gui/SizeablePanel.java"/>
+           <include name="com/tacpoint/gui/TacpointCanvas.java"/>
+           <include name="com/tacpoint/gui/TacpointLayout.java"/>
+           <include name="com/tacpoint/math/BlackScholesCalculator.java"/>
+           <include name="com/tacpoint/messagequeue/MessageQueue.java"/>
+           <include name="com/tacpoint/cache/CacheUpdateItem.java"/>
+           <include name="com/tacpoint/network/IPostNetworkRequestHandler.java"/>
+           <include name="com/tacpoint/http/HttpRequestExecutor.java"/>
+    	   <include name="com/tacpoint/http/HttpConfiguration.java"/>
+           <include name="com/tacpoint/http/HttpRequestExecutor12.java"/>
+           <include name="com/tacpoint/network/NetworkCommunicator.java"/>
+           <include name="com/tacpoint/publisher/TConstants.java"/>
+           <include name="com/tacpoint/publisher/Base64.java"/>
+           <include name="com/tacpoint/network/NetworkConfiguration.java"/>
+           <include name="com/tacpoint/network/NetworkRequestExecutor.java"/>
+           <include name="com/tacpoint/jms/ReducedMessageInflator.java"/>
+           <include name="com/tacpoint/cache/TimerCacheObject.java"/>
+           <include name="com/tacpoint/util/SystemOutLogger.java"/>
+           
+           <src path="${tacpoint.src.dir}"/>
+   
+    </javac> 
+    
+    <javac destdir="${classes.dir}" 
+           debug="true"
+           classpath="${classpath}">     
+    
+           <include name="com/b4utrade/bean/MM2MessageBean.java"/>
+           <include name="com/b4utrade/bean/QTMessageBean.java"/>
+           <include name="com/b4utrade/bean/StockOptionBean.java"/>
+           <include name="com/b4utrade/bean/StockPriceBean.java"/>
+           <include name="com/b4utrade/bean/StockProfileBean.java"/>
+           <include name="com/b4utrade/bo/ScrollingStockNewsBO.java"/>
+           <include name="com/b4utrade/bo/StockNewsBO.java"/>
+           <include name="com/b4utrade/gui/AlertFrame.java"/>
+           <include name="com/b4utrade/gui/AskPricePanel.java"/>
+           <include name="com/b4utrade/gui/BidPricePanel.java"/>
+           <include name="com/b4utrade/gui/BidSizePanel.java"/>
+           <include name="com/b4utrade/gui/ChangePricePanel.java"/>
+           <include name="com/b4utrade/gui/ChatPanel.java"/>
+           <include name="com/b4utrade/gui/CompanyPanel.java"/>
+           <include name="com/b4utrade/gui/IGUIHelper.java"/>
+           <include name="com/b4utrade/gui/LastPricePanel.java"/>
+           <include name="com/b4utrade/gui/LeftTopPanel.java"/>
+           <include name="com/b4utrade/gui/NewsPanel.java"/>
+           <include name="com/b4utrade/gui/PercentChangePanel.java"/>
+           <include name="com/b4utrade/gui/RightBottomPanel.java"/>
+           <include name="com/b4utrade/gui/TickerPanel.java"/>
+           <include name="com/b4utrade/gui/URLLabel.java"/>
+           <include name="com/b4utrade/gui/VolumePanel.java"/>
+           <include name="com/b4utrade/helper/AppletUpdateNewsHelper.java"/>
+    	   <include name="com/b4utrade/helper/PasswordEncrypter.java"/>
+    	   <include name="com/b4utrade/helper/PasswordWithProxyDialog.java"/>
+           <include name="com/b4utrade/helper/EquityHttpPollingHelper.java"/>
+           <include name="com/b4utrade/helper/EquityAndDJHttpPollingHelper.java"/>
+           <include name="com/b4utrade/helper/MarketMakerAppletHelper.java"/>
+           <include name="com/b4utrade/helper/MarketMakerHttpPollingHelper.java"/>
+           <include name="com/b4utrade/helper/MarketMakerNetworkInitHelper.java"/>
+           <include name="com/b4utrade/helper/MyPortDataHelper.java"/>
+           <include name="com/b4utrade/helper/OptionHttpPollingHelper.java"/>
+           <include name="com/b4utrade/helper/QuoteDetailNetworkInitHelper.java"/>
+           <include name="com/b4utrade/helper/QuoteNetworkInitHelper.java"/>
+           <include name="com/b4utrade/helper/Random.java"/>
+           <include name="com/b4utrade/helper/ScrollingNewsHelper.java"/>
+           <include name="com/b4utrade/helper/StockActivityHelper.java"/>
+           <include name="com/b4utrade/helper/StockNewsComparator.java"/>
+           <include name="com/b4utrade/helper/StockNewsUpdateHelper.java"/>
+           <include name="com/b4utrade/helper/StockQuoteAndNewsHelper.java"/>
+           <include name="com/b4utrade/helper/StockUpCloseHttpPollingHelper.java"/>
+           <include name="com/b4utrade/helper/StreamingStocksUpCloseNewsHelper.java"/>
+           <include name="com/b4utrade/helper/ValidateSessionHelper.java"/>
+           <include name="com/b4utrade/helper/WallOfStocksAppletHelper.java"/>
+           <include name="com/b4utrade/network/EquityStreamer.java"/>
+           <include name="com/b4utrade/network/QTMessageKeys.java"/>
+           <include name="com/b4utrade/network/HttpPollingHandler.java"/>
+           <include name="com/b4utrade/network/IStreamer.java"/>
+           <include name="com/b4utrade/network/MarketMakerStreamer.java"/>
+           <include name="com/b4utrade/network/NetworkStreamer.java"/>
+           <include name="com/b4utrade/network/OptionStreamer.java"/>
+           <include name="com/b4utrade/network/QTReducedMessageInflator.java"/>
+           <include name="com/b4utrade/network/OptimizedOptionStreamer.java"/>
+           <include name="com/b4utrade/network/OptimizedEquityStreamer.java"/>
+           <include name="com/b4utrade/stockutil/DefaultStockObject.java"/>
+           <include name="com/b4utrade/stockutil/MarketMakerPrice.java"/>
+           <include name="com/b4utrade/util/MessageQueue.java"/>
+          
+           
+   
+           <src path="${b4utrade.src.dir}"/>
+   
+    </javac>     
+    
+
+    <jar jarfile="${dist.dir}/b4utrade.jar"
+         basedir="${classes.dir}"
+         includes="com/,
+                   netscape/"         
+    />       
+
+  
+  
+  </target>
+  
+  <!-- =================================================================== -->
+  <!-- Compile package                                                     -->
+  <!-- =================================================================== -->
+  <target name="applet_compile" depends="clean">
+  
+    <echo message="compile classpath: ${classpath}"/>
+    
+ 
+
+    <javac destdir="${classes.dir}" 
+           debug="true"
+           classpath="${classpath}">     
+     
+           <include name="com/tacpoint/common/DefaultObject.java"/>
+           <include name="com/tacpoint/dataaccess/DefaultBusinessObject.java"/>
+           <include name="com/tacpoint/exception/BusinessException.java"/>
+           <include name="com/tacpoint/exception/DefaultException.java"/>
+           <include name="com/tacpoint/exception/NoDataFoundException.java"/>
+           <include name="com/tacpoint/gui/Alert.java"/>
+           <include name="com/tacpoint/gui/SingleInputFrame.java"/>
+           <include name="com/tacpoint/gui/SizeablePanel.java"/>
+           <include name="com/tacpoint/gui/TacpointCanvas.java"/>
+           <include name="com/tacpoint/gui/TacpointLayout.java"/>
+           <include name="com/tacpoint/math/BlackScholesCalculator.java"/>
+           <include name="com/tacpoint/messagequeue/MessageQueue.java"/>
+           <include name="com/tacpoint/cache/CacheUpdateItem.java"/>
+           <include name="com/tacpoint/network/IPostNetworkRequestHandler.java"/>
+           <include name="com/tacpoint/http/HttpRequestExecutor12.java"/>
+    	   <include name="com/tacpoint/http/HttpConfiguration.java"/>
+           <include name="com/tacpoint/network/NetworkCommunicator.java"/>
+           <include name="com/tacpoint/publisher/TConstants.java"/>
+           <include name="com/tacpoint/publisher/Base64.java"/>
+           <include name="com/tacpoint/network/NetworkConfiguration.java"/>
+           <include name="com/tacpoint/network/NetworkRequestExecutor.java"/>
+           <include name="com/tacpoint/jms/ReducedMessageInflator.java"/>
+           <include name="com/tacpoint/cache/TimerCacheObject.java"/>
+           <include name="com/tacpoint/util/SystemOutLogger.java"/>
+           
+           <src path="${tacpoint.src.dir}"/>
+   
+    </javac> 
+    
+    <javac destdir="${classes.dir}" 
+           debug="true"
+           classpath="${classpath}"       
+           executable="c:/jdk/jdk1.2.2/bin/javac"
+	   compiler="javac1.2">     
+    
+           <include name="com/b4utrade/bean/MM2MessageBean.java"/>
+           <include name="com/b4utrade/bean/QTMessageBean.java"/>
+           <include name="com/b4utrade/bean/StockOptionBean.java"/>
+           <include name="com/b4utrade/bean/StockPriceBean.java"/>
+           <include name="com/b4utrade/bean/StockProfileBean.java"/>
+           <include name="com/b4utrade/bo/ScrollingStockNewsBO.java"/>
+           <include name="com/b4utrade/bo/StockNewsBO.java"/>
+           <include name="com/b4utrade/gui/AlertFrame.java"/>
+           <include name="com/b4utrade/gui/AskPricePanel.java"/>
+           <include name="com/b4utrade/gui/BidPricePanel.java"/>
+           <include name="com/b4utrade/gui/BidSizePanel.java"/>
+           <include name="com/b4utrade/gui/ChangePricePanel.java"/>
+           <include name="com/b4utrade/gui/ChatPanel.java"/>
+           <include name="com/b4utrade/gui/CompanyPanel.java"/>
+           <include name="com/b4utrade/gui/IGUIHelper.java"/>
+           <include name="com/b4utrade/gui/LastPricePanel.java"/>
+           <include name="com/b4utrade/gui/LeftTopPanel.java"/>
+           <include name="com/b4utrade/gui/NewsPanel.java"/>
+           <include name="com/b4utrade/gui/PercentChangePanel.java"/>
+           <include name="com/b4utrade/gui/RightBottomPanel.java"/>
+           <include name="com/b4utrade/gui/TickerPanel.java"/>
+           <include name="com/b4utrade/gui/URLLabel.java"/>
+           <include name="com/b4utrade/gui/VolumePanel.java"/>
+           <include name="com/b4utrade/helper/AppletUpdateNewsHelper.java"/>
+           <include name="com/b4utrade/helper/EquityHttpPollingHelper.java"/>
+           <include name="com/b4utrade/helper/EquityAndDJHttpPollingHelper.java"/>
+           <include name="com/b4utrade/helper/MarketMakerAppletHelper.java"/>
+           <include name="com/b4utrade/helper/MarketMakerHttpPollingHelper.java"/>
+           <include name="com/b4utrade/helper/MarketMakerNetworkInitHelper.java"/>
+           <include name="com/b4utrade/helper/MyPortDataHelper.java"/>
+           <include name="com/b4utrade/helper/OptionHttpPollingHelper.java"/>
+           <include name="com/b4utrade/helper/QuoteDetailNetworkInitHelper.java"/>
+           <include name="com/b4utrade/helper/QuoteNetworkInitHelper.java"/>
+           <include name="com/b4utrade/helper/Random.java"/>
+           <include name="com/b4utrade/helper/ScrollingNewsHelper.java"/>
+           <include name="com/b4utrade/helper/StockActivityHelper.java"/>
+           <include name="com/b4utrade/helper/StockNewsComparator.java"/>
+           <include name="com/b4utrade/helper/StockNewsUpdateHelper.java"/>
+           <include name="com/b4utrade/helper/StockQuoteAndNewsHelper.java"/>
+           <include name="com/b4utrade/helper/StockUpCloseHttpPollingHelper.java"/>
+           <include name="com/b4utrade/helper/StreamingStocksUpCloseNewsHelper.java"/>
+           <include name="com/b4utrade/helper/ValidateSessionHelper.java"/>
+           <include name="com/b4utrade/helper/WallOfStocksAppletHelper.java"/>
+           <include name="com/b4utrade/network/EquityStreamer.java"/>
+           <include name="com/b4utrade/network/QTMessageKeys.java"/>
+           <include name="com/b4utrade/network/HttpPollingHandler.java"/>
+           <include name="com/b4utrade/network/IStreamer.java"/>
+           <include name="com/b4utrade/network/MarketMakerStreamer.java"/>
+           <include name="com/b4utrade/network/NetworkStreamer.java"/>
+           <include name="com/b4utrade/network/OptionStreamer.java"/>
+           <include name="com/b4utrade/network/QTReducedMessageInflator.java"/>
+           <include name="com/b4utrade/network/OptimizedOptionStreamer.java"/>
+           <include name="com/b4utrade/network/OptimizedEquityStreamer.java"/>
+           <include name="com/b4utrade/stockutil/DefaultStockObject.java"/>
+           <include name="com/b4utrade/stockutil/MarketMakerPrice.java"/>
+           <include name="com/b4utrade/util/MessageQueue.java"/>
+          
+           
+   
+           <src path="${b4utrade.src.dir}"/>
+   
+    </javac>     
+    
+
+
+    <javac destdir="${web.dir}/applet" 
+           debug="true"
+           classpath="${classpath}">     
+	   
+          <src path="${home.dir}/applets"/>
+ 
+    </javac>  
+
+  
+  
+  </target>
+  
+  <!-- =================================================================== -->
+  <!-- Compile package                                                     -->
+  <!-- =================================================================== -->
+  <target name="rtm_compile" depends="clean">
+  
+    <echo message="compile classpath: ${classpath}"/>
+ 
+    <javac srcdir="${tacpoint.src.dir}" 
+           destdir="${classes.dir}" 
+           excludes="com/tacpoint/http/*15*,
+                     com/tacpoint/network/*Soap*"
+           debug="true"
+           classpath="${classpath}"        
+    />     
+    
+    <javac srcdir="${b4utrade.src.dir}" 
+           destdir="${classes.dir}" 
+           includes="com/b4utrade/web/action/RTMOptionsAction.java"
+           debug="true"
+           classpath="${classpath}"        
+    />      
+
+    <javac  destdir="${classes.dir}" 
+           debug="true"
+           classpath="${classpath}">
+           
+           <exclude name="com/b4utrade/alert/**"/>
+           <exclude name="com/b4utrade/backoffice/**"/>
+           <exclude name="com/b4utrade/jmx/**"/>
+           <exclude name="com/b4utrade/ejb/**"/>
+           <exclude name="com/b4utrade/publisher/**"/>
+           <exclude name="com/b4utrade/datafeed/**"/>
+           <exclude name="com/b4utrade/datafeedparser/**"/>
+           <exclude name="com/b4utrade/jni/**"/>
+           <exclude name="com/b4utrade/hyperfeed/**"/>
+           <exclude name="com/b4utrade/helper/QuoteServerHelper.*"/>
+           <exclude name="com/b4utrade/sevlet/**"/>
+           <exclude name="com/netscape/**"/>
+           <exclude name="com/b4utrade/web/**"/>
+           <exclude name="**/HyperfeedUtility.java" />
+           <exclude name="**/StockStreamer.java" />
+          
+ 
+           <src path="${b4utrade.src.dir}"/>
+ 
+   </javac>  
+   
+ 
+       
+  </target>
+
+  <!-- =================================================================== -->
+  <!-- Compile package                                                     -->
+  <!-- =================================================================== -->
+  <target name="community_compile" depends="clean">
+
+    <echo message="compile classpath: ${classpath}"/>
+ 
+    <javac srcdir="${tacpoint.src.dir}" 
+           destdir="${classes.dir}" 
+           excludes="com/tacpoint/http/*15*,
+                     com/tacpoint/http/*15.java,
+                     com/tacpoint/network/*Soap*"
+           debug="true"
+           classpath="${classpath}"        
+    />     
+    
+    <javac srcdir="${b4utrade.src.dir}" 
+           destdir="${classes.dir}" 
+           includes="com/b4utrade/web/action/DelayedOptionSnapsAction.java,
+                     com/b4utrade/web/decorator/**,
+                     com/b4utrade/web/form/OptionSnapsForm.java,
+                     com/b4utrade/web/form/DelayedQuickQuoteForm.java,
+                     com/b4utrade/web/form/NonPopupTickerLookupForm.java,
+                     com/b4utrade/web/action/DelayedQuickQuoteAction.java,
+                     com/b4utrade/web/action/DelayedMarketQuotesAction.java,
+                     com/b4utrade/web/action/MarketQuotesAction.java,
+                     com/b4utrade/web/action/NonPopupTickerLookupAction.java,
+                     com/b4utrade/web/action/NonPopupTickerLookupResultsAction.java,
+                     com/b4utrade/web/helper/StockRetriever.java"
+           debug="true"
+           classpath="${classpath}"        
+    />      
+
+    <javac  destdir="${classes.dir}" 
+           debug="true"
+           classpath="${classpath}">
+
+           <exclude name="com/b4utrade/alert/**"/>
+           <exclude name="com/b4utrade/backoffice/**"/>
+           <exclude name="com/b4utrade/jmx/**"/>
+           <exclude name="com/b4utrade/ejb/**"/>
+           <exclude name="com/b4utrade/publisher/**"/>
+           <exclude name="com/b4utrade/datafeed/**"/>
+           <exclude name="com/b4utrade/datafeedparser/**"/>
+    	   <exclude name="com/b4utrade/distributor/**"/>
+           <exclude name="com/b4utrade/jni/**"/>
+           <exclude name="com/b4utrade/hyperfeed/**"/>
+           <exclude name="com/b4utrade/helper/QuoteServerHelper.*"/>
+    	   <exclude name="com/b4utrade/network/QTMessageReducer.*"/>
+           <exclude name="com/b4utrade/sevlet/**"/>
+           <exclude name="com/netscape/**"/>
+           <exclude name="com/b4utrade/web/**"/>
+           <exclude name="**/HyperfeedUtility.java" />
+           <exclude name="**/StockStreamer.java" />
+
+
+           <src path="${b4utrade.src.dir}"/>
+
+   </javac>  
+
+
+  </target>
+  
+  <!-- =================================================================== -->
+  <!-- Compile package                                                     -->
+  <!-- =================================================================== -->
+  <target name="admin_compile" depends="clean">
+  
+    <echo message="compile classpath: ${classpath}"/>
+ 
+    <javac srcdir="${tacpoint.src.dir}" 
+           destdir="${classes.dir}" 
+           excludes="com/tacpoint/http/*15*,
+                     com/tacpoint/network/*Soap*"
+           debug="true"
+           classpath="${classpath}"        
+    />     
+    
+    
+
+   <javac  destdir="${classes.dir}" 
+           debug="true"
+           classpath="${classpath}">
+           
+           <exclude name="com/b4utrade/alert/**"/>
+           <exclude name="com/b4utrade/backoffice/**"/>
+           <exclude name="com/b4utrade/jmx/**"/>
+           <exclude name="com/b4utrade/ejb/**"/>
+           <exclude name="com/b4utrade/publisher/**"/>
+           <exclude name="com/b4utrade/datafeed/**"/>
+           <exclude name="com/b4utrade/datafeedparser/**"/>
+           <exclude name="com/b4utrade/jni/**"/>
+           <exclude name="com/b4utrade/distributor/**"/>
+           <exclude name="com/b4utrade/network/**"/>
+           <exclude name="com/b4utrade/hyperfeed/**"/>
+           <exclude name="com/b4utrade/helper/QuoteServerHelper.*"/>
+           <exclude name="com/b4utrade/util/TickerExchangeLookup.java"/>
+           <exclude name="com/b4utrade/sevlet/**"/>
+           <exclude name="com/netscape/**"/>
+           <exclude name="com/b4utrade/web/**"/>
+           <exclude name="**/HyperfeedUtility.java" />
+           
+
+          
+ 
+           <src path="${b4utrade.src.dir}"/>
+	   <src path="${home.dir}/admin/src"/>
+
+   </javac>  
+    
+  </target>
+  
+  <!-- =================================================================== -->
+  <!-- Setup files for eventual web archiving                              -->
+  <!-- =================================================================== -->
+  <target name="copyfiles" depends="clean"> 
+    
+    <copy todir="${web.dir}/${app.name}/WEB-INF">         
+      <fileset dir="${home.dir}/xml/struts"/>         
+    </copy>  
+        
+    <copy todir="${web.dir}/${app.name}/WEB-INF">         
+      <fileset dir="${home.dir}/xml/web"/>         
+    </copy>          
+        
+    <copy todir="${web.dir}/${app.name}/WEB-INF">         
+      <fileset dir="${home.dir}/taglibs"/>        
+    </copy>          
+              
+    <copy todir="${web.dir}/${app.name}/WEB-INF" 
+          file="${tacpoint.src.dir}/com/tacpoint/tags/PageNav.tld" 
+    />         
+
+    <copy file="${home.dir}/xml/web/web.xml" todir="${web.dir}/${app.name}/WEB-INF" />
+
+    <copy todir="${web.dir}/${app.name}/WEB-INF/classes">         
+      <fileset dir="${home.dir}/properties">
+         <exclude name="application.properties"/>
+      </fileset>
+    </copy> 
+
+    <copy file="${home.dir}/properties/application.properties" todir="${web.dir}/${app.name}/WEB-INF/classes/resources" />
+
+    <copy todir="${web.dir}/${app.name}/WEB-INF/lib">         
+      <fileset dir="${home.dir}/jars" 
+               excludes="acme.jar,
+                         activation.jar,
+                         cdkjava3300.jar,
+                         classes12.zip,
+                         crimson.jar,
+                         hfjsdk_cnodeb.jar,
+                         iBusJMS.jar,
+                         j2ee.jar,
+                         jaxp.jar,
+                         jndi.jar,
+                         mail.jar,
+                         NetComponents.jar,
+                         netscape_js.zip,
+                         oreilly.jar,
+                         oreilly_servlet.jar,
+                         servlet.jar"/>
+    </copy>         
+
+    <copy todir="${web.dir}/${app.name}/html">
+      <fileset dir="${home.dir}/html"/>
+    </copy> 
+
+    <copy todir="${web.dir}/${app.name}/scripts">
+      <fileset dir="${home.dir}/scripts"/>
+    </copy> 
+
+    <copy todir="${web.dir}/${app.name}/images">
+      <fileset dir="${home.dir}/images"/>
+    </copy> 
+
+    <copy todir="${web.dir}/${app.name}/jsp">
+      <fileset dir="${home.dir}/jsp"/>
+    </copy> 
+
+    <copy todir="${web.dir}/${app.name}/js">
+      <fileset dir="${home.dir}/js"/>
+    </copy> 
+
+    <copy file="${home.dir}/html/index.html" todir="${web.dir}/${app.name}/" />
+
+  </target>
+
+  <!-- =================================================================== -->
+  <!-- Setup files for eventual web archiving                              -->
+  <!-- =================================================================== -->
+  <target name="copy_admin_files" depends="clean"> 
+    
+    <copy todir="${web.dir}/adminAPI/WEB-INF">         
+      <fileset dir="${home.dir}/admin/xml/struts"/>         
+    </copy>  
+        
+    <copy todir="${web.dir}/adminAPI/WEB-INF">         
+      <fileset dir="${home.dir}/admin/xml/web"/>         
+    </copy>          
+        
+    <copy todir="${web.dir}/adminAPI/WEB-INF">         
+      <fileset dir="${home.dir}/taglibs"/>        
+    </copy>          
+              
+    <copy file="${home.dir}/admin/xml/web/web.xml" todir="${web.dir}/adminAPI/WEB-INF" />   
+    
+    <copy todir="${web.dir}/adminAPI/WEB-INF/classes">         
+      <fileset dir="${home.dir}/admin/properties">
+         <exclude name="application.properties"/>
+      </fileset>
+    </copy> 
+
+    <copy file="${home.dir}/admin/properties/application.properties" todir="${web.dir}/adminAPI/WEB-INF/classes/resources" />
+
+    <copy todir="${web.dir}/adminAPI/WEB-INF/lib">         
+      <fileset dir="${home.dir}/jars" 
+               excludes="acme.jar,
+                         activation.jar,
+                         cdkjava3300.jar,
+                         classes12.zip,
+                         crimson.jar,
+                         hfjsdk_cnodeb.jar,
+                         iBusJMS.jar,
+                         j2ee.jar,
+                         jaxp.jar,
+                         jndi.jar,
+                         mail.jar,
+                         NetComponents.jar,
+                         netscape_js.zip,
+                         oreilly.jar,
+                         oreilly_servlet.jar,
+                         servlet.jar"/>
+    </copy>         
+  
+
+    <copy todir="${web.dir}/adminAPI/jsp">
+      <fileset dir="${home.dir}/jsp"/>
+    </copy> 
+
+  
+  </target>
+
+  <!-- =================================================================== -->
+  <!-- Setup files for eventual web archiving                              -->
+  <!-- =================================================================== -->
+  <target name="copy_snap_files" depends="clean"> 
+    
+            
+    <copy todir="${web.dir}/snap/WEB-INF">         
+      <fileset dir="${home.dir}/snapquotes/xml/web"/>         
+    </copy>          
+        
+    <copy todir="${web.dir}/snap/WEB-INF">         
+      <fileset dir="${home.dir}/taglibs"/>        
+    </copy>          
+              
+    <copy file="${home.dir}/snapquotes/xml/web/web.xml" todir="${web.dir}/snap/WEB-INF" />   
+    
+    <copy todir="${web.dir}/snap/WEB-INF/classes">         
+      <fileset dir="${home.dir}/snapquotes/properties">
+         <exclude name="application.properties"/>
+      </fileset>
+    </copy> 
+
+   
+    <copy todir="${web.dir}/snap/WEB-INF/lib">         
+      <fileset dir="${home.dir}/jars" 
+               excludes="acme.jar,
+                         activation.jar,
+                         cdkjava3300.jar,
+                         classes12.zip,
+                         crimson.jar,
+                         hfjsdk_cnodeb.jar,
+                         iBusJMS.jar,
+                         j2ee.jar,
+                         jaxp.jar,
+                         jndi.jar,
+                         mail.jar,
+                         log4j-1.2.8.jar,
+                         NetComponents.jar,
+                         netscape_js.zip,
+                         oreilly.jar,
+                         oreilly_servlet.jar,
+                         servlet.jar"/>
+    </copy>         
+  
+
+    
+  
+  </target>
+
+  <!-- =================================================================== -->
+  <!-- Setup files for eventual web archiving                              -->
+  <!-- =================================================================== -->
+  <target name="copy_applet_files" depends="clean"> 
+    
+            
+    <copy file="${home.dir}/applets/xml/web/web.xml" todir="${web.dir}/applet/WEB-INF" />   
+    
+    <copy todir="${web.dir}/applet/props">         
+      <fileset dir="${home.dir}/applets/properties">         
+      </fileset>
+    </copy> 
+
+  
+  </target>
+  
+  <!-- =================================================================== -->
+  <!-- Setup files for eventual web archiving                              -->
+  <!-- =================================================================== -->
+  <target name="copy_rtm_files" depends="clean"> 
+    
+    <copy todir="${web.dir}/rtm/WEB-INF">         
+      <fileset dir="${home.dir}/realtimemarkets/xml/struts"/>         
+    </copy>  
+        
+    <copy todir="${web.dir}/rtm/WEB-INF">         
+      <fileset dir="${home.dir}/realtimemarkets/xml/web"/>         
+    </copy>          
+        
+    <copy todir="${web.dir}/rtm/WEB-INF">         
+      <fileset dir="${home.dir}/taglibs"/>        
+    </copy>          
+              
+    <copy file="${home.dir}/realtimemarkets/xml/web/web.xml" todir="${web.dir}/rtm/WEB-INF" />   
+    
+    <copy todir="${web.dir}/rtm/WEB-INF/classes">         
+      <fileset dir="${home.dir}/realtimemarkets/properties">
+         <exclude name="application.properties"/>
+      </fileset>
+    </copy> 
+
+    <copy file="${home.dir}/realtimemarkets/properties/application.properties" todir="${web.dir}/rtm/WEB-INF/classes/resources" />
+     
+
+    <copy todir="${web.dir}/rtm/WEB-INF/lib">         
+      <fileset dir="${home.dir}/jars" 
+               excludes="acme.jar,
+                         activation.jar,
+                         cdkjava3300.jar,
+                         classes12.zip,
+                         crimson.jar,
+                         hfjsdk_cnodeb.jar,
+                         iBusJMS.jar,
+                         j2ee.jar,
+                         jaxp.jar,
+                         jndi.jar,
+                         mail.jar,
+                         NetComponents.jar,
+                         netscape_js.zip,
+                         oreilly.jar,
+                         oreilly_servlet.jar,
+                         servlet.jar"/>
+    </copy>         
+  
+
+    
+  
+  </target>
+
+  <!-- =================================================================== -->
+  <!-- Setup files for eventual web archiving                              -->
+  <!-- =================================================================== -->
+  <target name="copy_community_files" depends="clean"> 
+    
+    
+    <copy todir="${web.dir}/community/WEB-INF">         
+      <fileset dir="${home.dir}/community/xml/struts"/>         
+    </copy>  
+
+    <copy todir="${web.dir}/community/images">         
+      <fileset dir="${home.dir}/community/images"/>         
+    </copy>  
+    
+    <copy todir="${web.dir}/community/WEB-INF">         
+      <fileset dir="${home.dir}/community/xml/web"/>         
+    </copy>          
+        
+    <copy todir="${web.dir}/community/WEB-INF">         
+      <fileset dir="${home.dir}/taglibs"/>        
+    </copy>          
+              
+    <copy file="${home.dir}/community/xml/web/web.xml" todir="${web.dir}/community/WEB-INF" />   
+    
+    <copy todir="${web.dir}/community/WEB-INF/classes">         
+      <fileset dir="${home.dir}/community/properties">
+         <exclude name="application.properties"/>
+      </fileset>
+    </copy> 
+
+    <copy todir="${web.dir}/community/jsp">
+          <fileset dir="${home.dir}/jsp/community"/>
+    </copy> 
+
+    <copy todir="${web.dir}/community/html/common">
+          <fileset dir="${home.dir}/html/common"/>
+    </copy> 
+
+    <copy todir="${web.dir}/community/scripts">
+      <fileset dir="${home.dir}/scripts">
+         <exclude name="style.css"/>
+         <exclude name="displaytag.css"/>
+      </fileset>
+    </copy> 
+
+    <copy todir="${web.dir}/community/scripts">
+      <fileset dir="${home.dir}/community/styles"/>       
+    </copy> 
+
+    <copy file="${home.dir}/properties/indexticker_conversion.properties" todir="${web.dir}/community/WEB-INF/classes" />
+
+    <copy file="${home.dir}/community/properties/application.properties" todir="${web.dir}/community/WEB-INF/classes/resources" />
+
+
+    <copy todir="${web.dir}/community/WEB-INF/lib">         
+      <fileset dir="${home.dir}/jars" 
+               excludes="acme.jar,
+                         activation.jar,
+                         cdkjava3300.jar,
+                         crimson.jar,
+                         hfjsdk_cnodeb.jar,
+                         iBusJMS.jar,
+                         j2ee.jar,
+                         jaxp.jar,
+                         jndi.jar,
+                         mail.jar,
+                         NetComponents.jar,
+                         netscape_js.zip,
+                         oreilly.jar,
+                         oreilly_servlet.jar,
+                         servlet.jar"/>
+    </copy>         
+  
+
+    
+  
+  </target>
+  
+  <!-- =================================================================== -->
+  <!-- Setup quodd files for eventual web archiving                        -->
+  <!-- =================================================================== -->
+  <target name="copy_quodd_files" depends="copyfiles">
+       <move todir="${web.dir}/${app.name}/images/">
+         <fileset dir="${web.dir}/${app.name}/images/quodd/images"/>
+       </move>
+
+       <move file="${web.dir}/${app.name}/jsp/quodd/PopUpFaqHelp.jsp" todir="${web.dir}/${app.name}/jsp/app/" />
+       <move file="${web.dir}/${app.name}/jsp/quodd/MainFooterFrame.jsp" todir="${web.dir}/${app.name}/jsp/app/" />
+       <move file="${web.dir}/${app.name}/jsp/quodd/MainNav.jsp" todir="${web.dir}/${app.name}/jsp/app/" />
+       <move file="${web.dir}/${app.name}/jsp/quodd/MainPagesFrame.jsp" todir="${web.dir}/${app.name}/jsp/app/" />
+       <move file="${web.dir}/${app.name}/jsp/quodd/ActivateMarketMaker.jsp" todir="${web.dir}/${app.name}/jsp/common/" />
+       <move file="${web.dir}/${app.name}/jsp/quodd/ActivateOptions.jsp" todir="${web.dir}/${app.name}/jsp/common/" />       
+    
+       <copy todir="${web.dir}/${app.name}/html/dde" file="${home.dir}/dde/QuoddDde.exe"/>
+       <copy todir="${web.dir}/${app.name}/html/dde" file="${home.dir}/dde/samples/QUODD_DDE.XLA"/>    
+    
+  </target>
+
+  <!-- =================================================================== -->
+  <!-- Packages the distribution into a WAR                                -->
+  <!-- =================================================================== -->
+  <target name="war" depends="jar,copyfiles">
+    <jar  destfile="${dist.dir}/${app.name}.war"
+          basedir="${web.dir}/${app.name}" includes="**"/>        
+  </target>
+
+  <!-- =================================================================== -->
+  <!-- Packages the distribution into a WAR for Quodd                      -->
+  <!-- =================================================================== -->
+  <target name="quodd_war" depends="jar,copy_quodd_files">
+    <jar  destfile="${dist.dir}/${app.name}.war"
+          basedir="${web.dir}/${app.name}" includes="**"/>        
+  </target>
+
+
+  <!-- =================================================================== -->
+  <!-- Packages the distribution into a war for adminAPI                   -->
+  <!-- =================================================================== -->
+  <target name="admin" depends="admin_jar,copy_admin_files">
+    <jar  destfile="${dist.dir}/adminAPI.war"
+          basedir="${web.dir}/adminAPI" includes="**"/>        
+  </target>
+
+  <!-- =================================================================== -->
+  <!-- Packages the distribution into a war for real time markets          -->
+  <!-- =================================================================== -->
+  <target name="rtm" depends="rtm_jar,copy_rtm_files">
+    <jar  destfile="${dist.dir}/rtm.war"
+          basedir="${web.dir}/rtm" includes="**"/>        
+  </target>
+
+  <!-- =================================================================== -->
+  <!-- Packages the distribution into a war for the community archive      -->
+  <!-- =================================================================== -->
+  <target name="community" depends="community_jar,copy_community_files">
+    <jar  destfile="${dist.dir}/community.war"
+          basedir="${web.dir}/community" includes="**"/>        
+  </target>
+  
+  <!-- =================================================================== -->
+  <!-- Packages the distribution into a war for snap quotes                -->
+  <!-- =================================================================== -->
+  <target name="snap" depends="snap_jar,copy_snap_files">
+    <jar  destfile="${dist.dir}/snap.war"
+          basedir="${web.dir}/snap" includes="**"/>        
+  </target>
+
+  <!-- =================================================================== -->
+  <!-- Packages the distribution into a war (applets)                      -->
+  <!-- =================================================================== -->
+  <target name="applet" depends="applet_jar,copy_applet_files">
+    <jar  destfile="${dist.dir}/applet.war"
+          basedir="${web.dir}/applet" includes="**"/>        
+  </target>
+  
+
+  <!-- =================================================================== -->
+  <!-- Checkout from cvs                                                   -->
+  <!-- =================================================================== -->
+  <target name="cvs" depends="clean">
+  
+    <cvs cvsRoot="pyuen@66.89.114.86:/home/tacpoint/cvs"
+         package="tacpoint3.0"
+         cvsRsh="/usr/bin/ssh"
+         dest="${src.dir}/"
+    />
+    
+  </target>     
+  
+  <target name="sftp">
+	<scp trust="true"
+         file="${dist.dir}/b4utrade_com.jar" 
+  	     todir="akatz@216.150.131.93:/home/akatz" 
+		 password="Nodjiert9"/>
+  </target>
+	
+
+    <!-- =================================================================== -->
+    <!-- Builds entire everything!                                           -->
+    <!-- =================================================================== -->
+    <target name="all" depends="war"></target>
+    
+    <target name="b4utrade" depends="war">
+      <copy file="${home.dir}/package/build.xml" todir="${dist.dir}" /> 
+      <copy file="${home.dir}/package/b4utrade-config.properties" tofile="${dist.dir}/app-config.properties" />
+      <ant antfile="${dist.dir}/build.xml"  target="configure" inheritAll="false"/>    
+    </target>    
+    <target name="quodd" depends="quodd_war">
+      <copy file="${home.dir}/package/build.xml" todir="${dist.dir}" /> 
+      <copy file="${home.dir}/package/quodd-config.properties" tofile="${dist.dir}/app-config.properties" />
+      <ant antfile="${dist.dir}/build.xml"  target="configure" inheritAll="false"/>    
+    </target>
+    <target name="local" depends="war">
+      <copy file="${home.dir}/package/build.xml" todir="${dist.dir}" /> 
+      <copy file="${home.dir}/package/local-config.properties" tofile="${dist.dir}/app-config.properties" />
+      <ant antfile="${dist.dir}/build.xml"  target="configure" inheritAll="false"/>    
+    </target>
+ 
+</project>    

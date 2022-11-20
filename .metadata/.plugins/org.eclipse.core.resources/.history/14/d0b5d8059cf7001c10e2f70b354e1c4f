@@ -1,0 +1,51 @@
+/******************************************************************************
+*
+*  IndexChainDisplay.java
+*     QuoddFeed.MD.IndexChain example
+*
+*  REVISION HISTORY:
+*     18 JAN 2012 jcs  Created.
+*     30 JAN 2012 jcs  Build 13: UltraChan._usr / _pwd
+*     28 JUN 2012 jcs  Build 27: UCconfig
+*
+*  (c) 2011-2012, Quodd Financial
+*******************************************************************************/
+package examples;
+
+import java.util.*;
+import QuoddFeed.util.*;
+
+public class IndexChainDisplay
+{
+   /////////////////////////
+   //
+   //  main()
+   //
+   /////////////////////////
+   public static void main( String args[] )
+   {
+      UltraChan               uChan;
+      QuoddFeed.MD.IndexChain chn;
+      Scanner                 sc;
+      String                  idx;
+      int                     i, nRow, argc;
+
+      argc  = args.length;
+      idx   = ( argc > 0 ) ? args[0] : "IXF";
+      nRow  = ( argc > 1 ) ? Integer.parseInt( args[1] ) : 1000;
+      uChan = new UltraChan( UCconfig.Hostname(), 
+                             UCconfig.Port(),
+                             "username",
+                             "password",
+                             false );
+      uChan.Start();
+      chn   = new QuoddFeed.MD.IndexChain( uChan, idx, nRow );
+      System.out.printf( "Hit <ENTER> to terminate...\n" );
+      sc = new Scanner( System.in );
+      sc.nextLine();
+      System.out.printf( "Shutting down ...\n" );
+      uChan.Stop();
+      System.out.printf( QuoddFeed.msg.Cmd.ANSI_CLEAR );
+      System.out.printf( "Done!!\n" );
+   }
+}

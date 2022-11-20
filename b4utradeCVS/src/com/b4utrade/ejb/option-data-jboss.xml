@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jboss>
+  <enterprise-beans>
+    
+    <session>
+       <ejb-name>OptionData</ejb-name>
+       <jndi-name>ejbCache/OptionData</jndi-name>
+    </session>
+    <session>
+       <ejb-name>OptionSubscriber</ejb-name>
+       <jndi-name>ejbCache/OptionSubscriber</jndi-name>
+    </session>
+      
+  </enterprise-beans>
+</jboss>

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<section name="Workbench">
+	<section name="org.eclipse.buildship.ui.wizard.project.import">
+		<item key="project_location" value="C:\Users\SONY\Downloads\xmls\qsec033\FutureCPD"/>
+		<item key="gradle_distribution" value="GRADLE_DISTRIBUTION(VERSION(6.3))"/>
+		<item key="gradle_user_home" value="C:\Users\SONY\.gradle"/>
+		<item key="java_home" value="C:\Program Files\Java\jdk1.8.0_321"/>
+	</section>
+	<section name="org.eclipse.buildship.ui.wizard.project.creation">
+		<item key="project_location" value="C:\Users\SONY\OneDrive\Desktop\workspace-cpd\request"/>
+		<item key="use_default_location" value="true"/>
+		<item key="gradle_distribution" value="GRADLE_DISTRIBUTION(VERSION(6.3))"/>
+		<item key="gradle_user_home" value="C:\Users\SONY\.gradle"/>
+		<item key="java_home" value="C:\Program Files\Java\jdk1.8.0_321"/>
+	</section>
+</section>

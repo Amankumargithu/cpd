@@ -1,0 +1,89 @@
+/******************************************************************************
+*
+*  ModQuoddFeed.java
+*     UltraChan run-time statistics
+*
+*  REVISION HISTORY:
+*      2 DEC 2012 jcs  Created.
+*     10 JUN 2013 jcs  Build 63: HEX
+*
+*  (c) 2011-2013 Quodd Financial
+*******************************************************************************/
+package com.quodd.examples;
+
+import java.io.*;
+import java.nio.*;
+import java.nio.channels.*;
+import java.util.*;
+import QuoddFeed.msg.*;
+import QuoddFeed.util.*;
+
+public class MonQuoddFeed
+{
+   /////////////////////////
+   //
+   //  main()
+   //
+   /////////////////////////
+   public static void main( String args[] )
+   {
+      PrintStream             cout  = System.out;
+      String                  file, pm;
+      RunTimeStats            st;
+      RunTimeStats.Stat       rs;
+      RunTimeStats.BoolStat   bs;
+      RunTimeStats.LongStat   ls;
+      RunTimeStats.HexStat    hs;
+      RunTimeStats.TimeStat   ts;
+      RunTimeStats.DoubleStat ds;
+      RunTimeStats.StringStat ss;
+      int                     i, argc;
+      long                    maxStat;
+
+      // Quick check
+
+      argc = args.length;
+      if ( ( argc > 0 ) && args[0].equals( "--version" ) ) {
+         System.out.printf( "%s\n", QuoddMsg.Version() );
+         return;
+      }
+      file = ( argc > 0 ) ? args[0] : "./stats.java";
+      if ( (maxStat=RunTimeStats.size( file )) == 0 )
+         return;
+      st = new RunTimeStats( file, (int)maxStat, true );
+      for ( i=0; i<maxStat; i++ ) {
+         if ( (rs=st.GetStat( i )) == null )
+            break;  // for-i
+         switch( rs._type ) {
+            case RunTimeStats.BOOL:
+               bs = (RunTimeStats.BoolStat)rs;
+               pm = bs._val ? "YES" : "NO";
+               cout.printf( "[%04d] %-25s = %s\n", i, bs._name, pm );
+               break;
+            case RunTimeStats.LONG:
+               ls = (RunTimeStats.LongStat)rs;
+               cout.printf( "[%04d] %-25s = %d\n", i, ls._name, ls._val );
+               break;
+            case RunTimeStats.HEX:
+               hs = (RunTimeStats.HexStat)rs;
+               cout.printf( "[%04d] %-25s = 0x%x\n", i, hs._name, hs._val );
+               break;
+            case RunTimeStats.TIME:
+               ts = (RunTimeStats.TimeStat)rs;
+               pm = QuoddMsg.pDateTimeMs( ts._val );
+               cout.printf( "[%04d] %-25s = %s\n", i, ts._name, pm );
+               break;
+            case RunTimeStats.DOUBLE:
+               ds = (RunTimeStats.DoubleStat)rs;
+               cout.printf( "[%04d] %-25s = %.4f\n", i, ds._name, ds._val );
+               break;
+            case RunTimeStats.STRING:
+               ss = (RunTimeStats.StringStat)rs;
+               cout.printf( "[%04d] %-25s = %s\n", i, ss._name, ss._val );
+               break;
+         }
+      }
+   }
+}
+
+

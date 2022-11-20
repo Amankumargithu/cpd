@@ -1,0 +1,157 @@
+{
+	"info": {
+		"_postman_id": "125c9739-c8d8-4303-b22c-c481c6c43c91",
+		"name": "cpds Copy 2",
+		"schema": "https://schema.getpostman.com/json/collection/v2.0.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "bondcpd",
+			"item": [
+				{
+					"name": "List meta",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{domain}}/bondcpd/list/meta/733"
+					},
+					"response": []
+				},
+				{
+					"name": "List image",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{domain}}/bondcpd/list/image"
+					},
+					"response": []
+				},
+				{
+					"name": "List pending",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{domain}}/bondcpd/list/pending"
+					},
+					"response": []
+				},
+				{
+					"name": "List root",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{domain}}/bondcpd/list/root"
+					},
+					"response": []
+				},
+				{
+					"name": "Snap Dump",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{domain}}/bondcpd/snap/dump/334"
+					},
+					"response": []
+				},
+				{
+					"name": "Snap List",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\"B:ITW21\":[\"733\",\"734\"],\"B:ITW30\":[\"733\",\"734\"]}"
+						},
+						"url": "{{domain}}/bondcpd/snap/list"
+					},
+					"response": []
+				},
+				{
+					"name": "unsubscribe ticker",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{domain}}/bondcpd/unsubscribe?ticker=B:ITW30",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"bondcpd",
+								"unsubscribe"
+							],
+							"query": [
+								{
+									"key": "ticker",
+									"value": "B:ITW30"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "subscribe ticker",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{domain}}/bondcpd/subscribe?ticker=B:ITW30",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"bondcpd",
+								"subscribe"
+							],
+							"query": [
+								{
+									"key": "ticker",
+									"value": "B:ITW30"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Stat",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{domain}}/bondcpd/stat"
+					},
+					"response": []
+				},
+				{
+					"name": "Snap",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{domain}}/bondcpd/snap?ticker=B:ITW21&dataType=334",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"bondcpd",
+								"snap"
+							],
+							"query": [
+								{
+									"key": "ticker",
+									"value": "B:ITW21"
+								},
+								{
+									"key": "dataType",
+									"value": "334"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}

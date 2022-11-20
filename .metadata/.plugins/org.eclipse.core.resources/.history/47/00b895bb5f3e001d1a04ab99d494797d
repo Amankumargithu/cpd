@@ -1,0 +1,695 @@
+package com.b4utrade.helper;
+
+import java.beans.XMLEncoder;
+import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.net.URLConnection;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Hashtable;
+import java.util.LinkedList;
+import java.util.Map;
+import java.util.StringTokenizer;
+import java.util.Vector;
+
+import javax.servlet.ServletOutputStream;
+
+import com.b4utrade.bean.NewsBean;
+import com.b4utrade.ejb.FutureDataHandler;
+import com.b4utrade.ejb.FutureOptionDataHandler;
+import com.b4utrade.ejb.OptionData;
+import com.b4utrade.ejb.OptionDataHandler;
+import com.b4utrade.stock.QuoteServer;
+import com.b4utrade.stock.Quotes;
+import com.b4utrade.util.B4UConstants;
+import com.equitymontage.ejb.EquityMontageData;
+import com.equitymontage.ejb.EquityMontageDataHandler;
+import com.optionsregional.ejb.OptionsRegionalData;
+import com.optionsregional.ejb.OptionsRegionalDataHandler;
+import com.tacpoint.common.DefaultObject;
+import com.tacpoint.objectpool.ObjectPoolManager;
+import com.tacpoint.util.Constants;
+import com.tacpoint.util.Environment;
+import com.tacpoint.util.Logger;
+
+/**
+ * QuoteServerHelper.java
+ * 
+ * @author Ankit
+ */
+
+public class QuoteServerHelper extends DefaultObject {
+	private static final String OPTION_INDICATOR = "O:";
+	private static final String FUTURE_OPTION_INDICATOR = "FO:";
+	public static final String FUTURE_INDICATOR = "/";
+	private static final String DELAYED_EQUITY_INDICATOR = ".D";
+	public final static String TICKER_TYPE_EQUITY = "EQUITY";
+	public final static String TICKER_TYPE_OPTIONS = "OPTIONS";
+	public final static String TICKER_TYPE_FUTURES = "FUTURES";
+	public final static String TICKER_TYPE_OPTIONS_MONTAGE = "OPREG";
+	public final static String TICKER_TYPE_EQUITY_MONTAGE = "EQREG";
+
+	private boolean debug = Boolean.valueOf(Environment.get(Constants.DEBUG)).booleanValue();
+
+	private static final String MONTAGE_IDENTIFIER = "/";
+	private static Map<String, ArrayList<NewsBean>> sourceNewsMap = new HashMap<>();
+
+	private static byte[] appendDelayedEquityIndicator(String delayedTicker, byte[] origStream) {
+		try {
+			String beanstr = new String(origStream);
+			String systemTicker = null;
+			System.out.println("Bean str: " + beanstr);
+			StringTokenizer st = new StringTokenizer(beanstr, "||");
+			st.nextToken();
+			systemTicker = (st.nextToken()).trim();
+			beanstr = beanstr.replaceAll(systemTicker, delayedTicker);
+			System.out.println("After modifying Bean str: " + beanstr);
+			return beanstr.getBytes();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
+
+	public static Hashtable<String, StockActivityHelper> getQuote(String inTickers) {
+		Hashtable resultQuote = new Hashtable();
+		Hashtable origEquityTickers = new Hashtable();
+
+		boolean local = Boolean.valueOf(Environment.get("LOCAL_QUOTE_SERVER")).booleanValue();
+		try {
+			Quotes tempQuote = null;
+			QuoteServer tempServer = null;
+			LinkedList returnQuoteList = null;
+			LinkedList returnOptionList = null;
+			StringBuffer equityTickers = null;
+			StringBuffer optionTickers = null;
+			StringBuffer futureOptionTickers = null;
+			StringBuffer futureTickers = null;
+			StringBuffer optionRegionalTickers = null;
+			StringBuffer equityMontageTickers = null;
+			String ticker = "";
+
+			StringTokenizer st = new StringTokenizer(inTickers, ",");
+			while (st.hasMoreTokens()) {
+				String tempTicker = (st.nextToken()).trim();
+				if (isOptionRegionalSymbol(tempTicker)) {
+					if (optionRegionalTickers == null) {
+						optionRegionalTickers = new StringBuffer();
+					} else {
+						optionRegionalTickers.append(",");
+					}
+					optionRegionalTickers.append(tempTicker);
+				} else if (isOptionSymbol(tempTicker)) {
+					if (optionTickers == null) {
+						optionTickers = new StringBuffer();
+					} else {
+						optionTickers.append(",");
+					}
+					optionTickers.append(tempTicker);
+				} else if (isFutureOptionSymbol(tempTicker)) {
+					if (futureOptionTickers == null) {
+						futureOptionTickers = new StringBuffer();
+					} else {
+						futureOptionTickers.append(",");
+					}
+					futureOptionTickers.append(tempTicker);
+				} else if (tempTicker.startsWith(FUTURE_INDICATOR)) {
+					if (futureTickers == null) {
+						futureTickers = new StringBuffer();
+					} else {
+						futureTickers.append(",");
+					}
+					futureTickers.append(tempTicker);
+				}
+				// For Equity Montage Only
+				else if (isMontageSymbol(tempTicker)) {
+					if (equityMontageTickers == null) {
+						equityMontageTickers = new StringBuffer();
+					} else {
+						equityMontageTickers.append(",");
+					}
+					equityMontageTickers.append(tempTicker);
+				} else {
+					if (equityTickers == null) {
+						equityTickers = new StringBuffer();
+					} else {
+						equityTickers.append(",");
+					}
+					origEquityTickers.put(tempTicker, tempTicker);
+					if (tempTicker.endsWith(DELAYED_EQUITY_INDICATOR)) {
+						// need to strip off the suffix in order to find match in quotes cache
+						tempTicker = tempTicker.substring(0, tempTicker.length() - DELAYED_EQUITY_INDICATOR.length());
+					}
+					equityTickers.append(tempTicker);
+				}
+			}
+			// get the equity Quotes
+			if (equityTickers != null) {
+				if (local) {
+					tempQuote = Quotes.getInstance();
+					returnQuoteList = tempQuote.getStockQuote(equityTickers.toString());
+				} else {
+					tempServer = QuoteServer.getInstance();
+					returnQuoteList = tempServer.getStockQuote(equityTickers.toString());
+				}
+			}
+			if (returnQuoteList == null) {
+				returnQuoteList = new LinkedList();
+			}
+
+			for (int i = 0; i < returnQuoteList.size(); ++i) {
+				byte[] stockStream = (byte[]) returnQuoteList.get(i);
+				if (stockStream.length <= 0) {
+					continue;
+				}
+				ticker = getTickerFromQTBytes(stockStream);
+				int newsId = 0;
+				String sNewsTime = "";
+				// check to see if we need to alter the ticker symbol and append the
+				// DELAYED_EQUITY_INDICATOR
+				if (origEquityTickers.containsKey(ticker + DELAYED_EQUITY_INDICATOR)) {
+					StockActivityHelper sah = new StockActivityHelper();
+					sah.setStockStream(appendDelayedEquityIndicator(ticker + DELAYED_EQUITY_INDICATOR, stockStream));
+					sah.setNewsTime(sNewsTime);
+					sah.setNewsID(newsId);
+					sah.setIsOption(true);
+					resultQuote.put(ticker + DELAYED_EQUITY_INDICATOR, sah);
+				}
+				if (origEquityTickers.containsKey(ticker)) {
+					StockActivityHelper sah = new StockActivityHelper();
+					sah.setStockStream(stockStream);
+					sah.setNewsTime(sNewsTime);
+					sah.setNewsID(newsId);
+					sah.setIsOption(true);
+					resultQuote.put(ticker, sah);
+				}
+			}
+			// get the Option Quotes
+			if (optionTickers != null && optionTickers.length() > 0) {
+				returnOptionList = getOptionDataList(optionTickers.toString());
+				if (returnOptionList == null) {
+					returnOptionList = new LinkedList();
+				}
+				for (int i = 0; i < returnOptionList.size(); ++i) {
+					byte[] stockStream = (byte[]) returnOptionList.get(i);
+					if (stockStream.length <= 0) {
+						continue;
+					}
+					ticker = getTickerFromQTBytes(stockStream);
+					if (ticker != null) {
+						StockActivityHelper sah = new StockActivityHelper();
+						sah.setStockStream(stockStream);
+						sah.setIsOption(true);
+						resultQuote.put(ticker, sah);
+					}
+				}
+			}
+			// get the Future Option Quotes
+			if (futureOptionTickers != null) {
+				returnOptionList = getFutureOptionDataList(futureOptionTickers.toString());
+			}
+			if (returnOptionList == null) {
+				returnOptionList = new LinkedList();
+			}
+			for (int i = 0; i < returnOptionList.size(); ++i) {
+				byte[] stockStream = (byte[]) returnOptionList.get(i);
+				if (stockStream.length <= 0) {
+					continue;
+				}
+				ticker = getTickerFromQTBytes(stockStream);
+				if (ticker != null) {
+					StockActivityHelper sah = new StockActivityHelper();
+					sah.setStockStream(stockStream);
+					sah.setIsOption(true);
+					resultQuote.put(ticker, sah);
+				}
+			}
+			// handle future data
+			if (futureTickers != null && futureTickers.length() > 0)
+				handleFutureData(futureTickers, resultQuote);
+			if (equityMontageTickers != null && equityMontageTickers.length() > 0) {
+				handleEquityMontageDataList(equityMontageTickers, resultQuote);
+			}
+			if (optionRegionalTickers != null && optionRegionalTickers.length() > 0) {
+				handleOptionRegionalDataList(optionRegionalTickers, resultQuote);
+			}
+		} catch (Exception e) {
+			Logger.log("QuoteServerHelper.getQuote() - Exception occurred.", e);
+		}
+		return resultQuote;
+	}
+
+	public static ArrayList<NewsBean> getEdgeLatestNewsByTickers(String tickers, String newsSource) {
+		if (tickers == null)
+			return new ArrayList<>();
+		HashMap<String, NewsBean> map = EdgeNewsSearchHelper.getLatestNewsByTickers(tickers, newsSource);
+		if (map == null || map.size() == 0)
+			return new ArrayList<>();
+		return new ArrayList<NewsBean>(map.values());
+	}
+
+	private static void handleFutureData(StringBuffer futureTickers, Hashtable resultQuote) throws Exception {
+		LinkedList returnFutureList = null;
+		String ticker = "";
+		if (futureTickers != null)
+			returnFutureList = getFutureDataList(futureTickers.toString());
+		if (returnFutureList == null) {
+			returnFutureList = new LinkedList();
+		}
+		for (int i = 0; i < returnFutureList.size(); ++i) {
+			byte[] stockStream = (byte[]) returnFutureList.get(i);
+			if (stockStream.length <= 0) {
+				continue;
+			}
+			ticker = getTickerFromQTBytes(stockStream);
+			if (ticker != null) {
+				StockActivityHelper sah = new StockActivityHelper();
+				sah.setStockStream(stockStream);
+				sah.setIsOption(true);
+				resultQuote.put(ticker, sah);
+			}
+		}
+	}
+
+	private static void handleEquityMontageDataList(StringBuffer regionalSymbols, Hashtable resultQuote)
+			throws Exception {
+		LinkedList returnRegionalList = null;
+		String ticker = "";
+		if (regionalSymbols != null)
+			returnRegionalList = getEquityMontageDataList(regionalSymbols.toString());
+		if (returnRegionalList == null) {
+			returnRegionalList = new LinkedList();
+		}
+		for (int i = 0; i < returnRegionalList.size(); ++i) {
+			byte[] stockStream = (byte[]) returnRegionalList.get(i);
+			if (stockStream.length <= 0) {
+				continue;
+			}
+			ticker = getTickerFromQTBytes(stockStream);
+			if (ticker != null) {
+				StockActivityHelper sah = new StockActivityHelper();
+				sah.setStockStream(stockStream);
+				sah.setIsOption(true);
+				resultQuote.put(ticker, sah);
+			}
+		}
+	}
+
+	public static LinkedList getEquityMontageDataList(String tickers) {
+		ObjectPoolManager opm = null;
+		EquityMontageDataHandler odh = null;
+		LinkedList ll = null;
+		int numTries = 0;
+		while (numTries <= 1) {
+			try {
+				opm = ObjectPoolManager.getInstance();
+				odh = (EquityMontageDataHandler) opm.getObject("EquityMontageDataHandler", 1000);
+				if (odh != null) {
+					EquityMontageData od = odh.getRemoteInterface();
+					if (od != null) {
+						ll = od.getEquityMontageQuote(tickers);
+					} else {
+						Logger.log("QuoteServerHelper - EquityMontageDataHandler is null.");
+						throw new Exception("EquityMontageDataHandler Remote interface is null.");
+					}
+				} else {
+					Logger.log(
+							"QuoteServerHelper.getEquityMontageDataList - unable to obtain EquityMontageDataHandler from object pool!");
+				}
+				break;
+			} catch (Exception exc) {
+				Logger.log("QuoteServerHelper - Exception encountered while trying to get EquityMontage Data.", exc);
+				exc.printStackTrace();
+				numTries++;
+				if (odh != null) {
+					odh.init();
+				}
+			} finally {
+				if (odh != null)
+					opm.freeObject("EquityMontageDataHandler", odh);
+			}
+		}
+		return ll;
+	}
+
+	private static void handleOptionRegionalDataList(StringBuffer regionalSymbols, Hashtable resultQuote)
+			throws Exception {
+		LinkedList returnRegionalList = null;
+		String ticker = "";
+		if (regionalSymbols != null)
+			returnRegionalList = getOptionRegionalDataList(regionalSymbols.toString());
+		if (returnRegionalList == null) {
+			returnRegionalList = new LinkedList();
+		}
+		for (int i = 0; i < returnRegionalList.size(); ++i) {
+			byte[] stockStream = (byte[]) returnRegionalList.get(i);
+			if (stockStream.length <= 0) {
+				continue;
+			}
+			ticker = getTickerFromQTBytes(stockStream);
+			if (ticker != null) {
+				StockActivityHelper sah = new StockActivityHelper();
+				sah.setStockStream(stockStream);
+				sah.setIsOption(true);
+				resultQuote.put(ticker, sah);
+			}
+		}
+	}
+
+	public static LinkedList getOptionRegionalDataList(String tickers) {
+		ObjectPoolManager opm = null;
+		OptionsRegionalDataHandler odh = null;
+		LinkedList ll = null;
+		int numTries = 0;
+		while (numTries <= 1) {
+			try {
+				opm = ObjectPoolManager.getInstance();
+				odh = (OptionsRegionalDataHandler) opm.getObject("OptionsRegionalDataHandler", 1000);
+				if (odh != null) {
+					OptionsRegionalData od = odh.getRemoteInterface();
+					if (od != null) {
+						ll = od.getOptionsRegionalQuote(tickers);
+					} else {
+						Logger.log("OptionsQuoteServlet - OptionRegionalData is null.");
+						throw new Exception("OptionRegionalData Remote interface is null.");
+					}
+				} else {
+					Logger.log(
+							"QuoteServerHelper.getOptionRegionalDataList - unable to obtain Option Regional Data Handler from object pool!");
+				}
+				break;
+			} catch (Exception exc) {
+				Logger.log("OptionsQuoteServlet - Exception encountered while trying to get Option Regional Data.",
+						exc);
+				exc.printStackTrace();
+				numTries++;
+				if (odh != null) {
+					odh.init();
+				}
+			} finally {
+				if (odh != null)
+					opm.freeObject("OptionsRegionalDataHandler", odh);
+			}
+		}
+		return ll;
+	}
+
+	public static Hashtable getGeneralNews(String sources) {
+		if (sources == null)
+			sources = "EDGE";
+		Hashtable resultQuote = new Hashtable();
+		Vector<StockNewsUpdateHelper> newsVector = new Vector<>();
+		ArrayList<NewsBean> generalNewsList;
+		try {
+			sourceNewsMap = TopTenEdgeNewsCache.getLatestNews();
+			String newsSources[] = sources.split(",");
+			ArrayList<NewsBean> tempList = new ArrayList<>();
+			for (int i = 0; i < newsSources.length; i++) {
+				ArrayList<NewsBean> list = sourceNewsMap.get(newsSources[i]);
+				if (list != null) {
+					tempList.addAll(list);
+				}
+			}
+			System.out.println("QuoteServerHelper.getGeneralNews tempList.size = " + tempList.size());
+			Collections.sort(tempList, new Comparator<NewsBean>() {
+				@Override
+				public int compare(NewsBean o1, NewsBean o2) {
+					if (o1.getNewsID() < o2.getNewsID()) {
+						return 1;
+					} else if (o1.getNewsID() > o2.getNewsID()) {
+						return -1;
+					} else
+						return 0;
+				}
+			});
+			generalNewsList = getTopTenNewsList(tempList);
+			if (generalNewsList != null && generalNewsList.size() > 0) {
+				for (int i = 0; i < generalNewsList.size(); i++) {
+					NewsBean news = generalNewsList.get(i);
+					if (news == null) {
+						continue;
+					}
+					StockNewsUpdateHelper snuh = new StockNewsUpdateHelper();
+					snuh.setTicker(news.getTickers());
+					snuh.setLastNews(news.getHeadline());
+					snuh.setLastNewsSource(news.getNewsSource());
+					snuh.setLastNewsID(news.getNewsID());
+					snuh.setLastNewsDate(news.getFormattedNewsDate());
+					snuh.setDowJones(B4UConstants.NEWS_EDGE_CODE);
+					newsVector.addElement(snuh);
+				}
+				resultQuote.put("GENERAL_NEWS", newsVector);
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return resultQuote;
+	}
+
+	private static ArrayList<NewsBean> getTopTenNewsList(ArrayList<NewsBean> tempList) {
+		if (tempList.size() > 10) {
+			ArrayList<NewsBean> list = new ArrayList<>();
+			for (int i = 9; i >= 0; i--) {
+				list.add(tempList.get(i));
+			}
+			return list;
+		} else
+			return tempList;
+	}
+
+	public static LinkedList getOptionDataList(String tickers) {
+		ObjectPoolManager opm = null;
+		OptionDataHandler odh = null;
+		LinkedList ll = null;
+		int numTries = 0;
+		while (numTries <= 1) {
+			try {
+				opm = ObjectPoolManager.getInstance();
+				odh = (OptionDataHandler) opm.getObject("OptionDataHandler", 1000);
+				if (odh != null) {
+					OptionData od = odh.getRemoteInterface();
+					if (od != null) {
+						ll = od.getOptionQuote(tickers);
+					} else {
+						Logger.log("getOptionDataList - OptionData is null.");
+						throw new Exception("getOptionDataList OptionData Remote interface is null.");
+					}
+				} else {
+					Logger.log(
+							"QuoteServerHelper.getOptionDataList - unable to obtain Option Data Handler from object pool!");
+				}
+				break;
+			} catch (Exception exc) {
+				Logger.log("getOptionDataList - Exception encountered while trying to get Option Data.", exc);
+				if (odh != null) {
+					odh.init();
+				}
+			} finally {
+				numTries++;
+				if (odh != null)
+					opm.freeObject("OptionDataHandler", odh);
+			}
+		}
+		return ll;
+	}
+
+	public static String getUserAlertsJson(String aUserID) {
+		String userEmailUrl = Environment.get("USER_ALERT_URL");
+		URL url;
+		try {
+			url = new URL(userEmailUrl + "?user_id=" + aUserID);
+			URLConnection urlConnection = url.openConnection();
+			InputStream inputStream = urlConnection.getInputStream();
+			int bytesRead = -1;
+			ByteArrayOutputStream baos = new ByteArrayOutputStream();
+			byte[] buffer = new byte[1024];
+			while ((bytesRead = inputStream.read(buffer)) != -1) {
+				baos.write(buffer, 0, bytesRead);
+			}
+			return new String(baos.toByteArray());
+		} catch (Exception e) {
+			Logger.log("WARNING " + e.getMessage(), e);
+		}
+		return null;
+	}
+
+//	public static Vector getUserAlerts(String aUserID) {
+//		Vector vAlerts = null;
+//		ObjectPoolManager opm = ObjectPoolManager.getInstance();
+//		AlertDataHandler adh = (AlertDataHandler) opm.getObject("AlertDataHandler", 1000L);
+//		if (adh != null && aUserID != null) {
+//			try {
+//				AlertData ad = adh.getRemoteInterface();
+//				if (ad != null) {
+//					vAlerts = ad.getUserAlerts(aUserID);
+//				} else {
+//					throw new Exception("Unable to obtain AlertData remote interface from AlertDataHandler.");
+//				}
+//			} catch (Exception e) {
+//				Logger.log(" AlertClientServer.getUserAlert() " + e.getMessage(), e);
+//				adh.init();
+//			} finally {
+//				opm.freeObject("AlertDataHandler", adh);
+//			}
+//		} else if (adh == null) {
+//			Logger.log("Exception: AlertClientServer.getUserAlerts(): not able to obtain alert handler");
+//		}
+//		if (vAlerts == null)
+//			vAlerts = new Vector<>();
+//		return vAlerts;
+//	}
+
+//	public static Vector getSystemAlerts(String aUserID) {
+//		Vector vAlerts = null;
+//		ObjectPoolManager opm = ObjectPoolManager.getInstance();
+//		AlertDataHandler adh = (AlertDataHandler) opm.getObject("AlertDataHandler", 1000L);
+//		if (adh != null && aUserID != null) {
+//			try {
+//				AlertData ad = adh.getRemoteInterface();
+//				if (ad != null) {
+//					vAlerts = ad.getSystemAlerts(aUserID);
+//				} else {
+//					throw new Exception("Unable to obtain AlertData remote interface from AlertDataHandler.");
+//				}
+//			} catch (Exception e) {
+//				Logger.log(" AlertClientServer.getSystemAlerts() " + e.getMessage(), e);
+//				adh.init();
+//			} finally {
+//				opm.freeObject("AlertDataHandler", adh);
+//			}
+//		} else if (adh == null) {
+//			Logger.log(" Exception: AlertClientServer.getSystemAlerts(): not able to obtain alert handler");
+//		}
+//		if (vAlerts == null)
+//			vAlerts = new Vector<>();
+//		return vAlerts;
+//	}
+
+	private static LinkedList getFutureOptionDataList(String tickers) {
+		ObjectPoolManager opm = null;
+		FutureOptionDataHandler odh = null;
+		LinkedList ll = null;
+		int numTries = 0;
+		while (numTries <= 1) {
+			try {
+				opm = ObjectPoolManager.getInstance();
+				odh = (FutureOptionDataHandler) opm.getObject("FutureOptionDataHandler", 1000);
+				if (odh != null) {
+					OptionData od = odh.getRemoteInterface();
+					if (od != null) {
+						ll = od.getOptionQuote(tickers);
+					} else {
+						Logger.log("getFutureOptionDataList - OptionData is null.");
+						throw new Exception("getFutureOptionDataList OptionData Remote interface is null.");
+					}
+				} else {
+					Logger.log(
+					r.getFutureOptionDataList - unable to obtain Future Option Data Handler from object pool!");
+				}
+				break;
+			} catch (Exception exc) {
+				Logger.log("getFutureOptionDataList - Exception encountered while trying to get Future Option Data.",
+						exc);
+				if (odh != null) {
+					odh.init();
+				}
+			} finally {
+				numTries++;
+				if (odh != null)
+					opm.freeObject("FutureOptionDataHandler", odh);
+			}
+		}
+		return ll;
+	}
+
+	public static LinkedList getFutureDataList(String tickers) {
+		try {
+			response.setContentType("text/xml");
+			HashMap temphash = null;
+			String spotSymbolUrl = Environment.get("FUTURE_OPTION_QUOTE_URL");
+			try {
+				URL url = new URL(spotSymbolUrl);
+				HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
+				urlConnection.setRequestMethod("GET");
+				urlConnection.setDoOutput(true);
+				int responseCode = urlConnection.getResponseCode();
+				if (responseCode != 200) {
+					Logger.log("QuoteServerHelper : Unable to fetch  data");
+				}
+				String jsonString = "";
+				try (BufferedReader br = new BufferedReader(new InputStreamReader(urlConnection.getInputStream()));) {
+					jsonString = br.readLine();
+				}
+				urlConnection.disconnect();
+				temphash = gson.fromJson(jsonString, gsonMapType);
+			} catch (Exception exc) {
+				Logger.log("Exception encountered while trying to get TickerLookUp Data.", exc);
+			}
+			if (temphash == null)
+				temphash = new HashMap<>();
+			ByteArrayOutputStream byteArray = new ByteArrayOutputStream();
+			try (XMLEncoder encoder = new XMLEncoder(byteArray);) {
+				encoder.writeObject(temphash);
+			}
+			try (ServletOutputStream sos = response.getOutputStream();) {
+				sos.write(byteArray.toByteArray());
+				sos.flush();
+			} catch (Exception e) {
+				Logger.log("QuoteServerHelper.execute() : encountered exception. ", e);
+			}
+		} catch (Exception e) {
+			String msg = "QuoteServerHelper.execute() : Unable to retrieve data.";
+			Logger.log(msg, e);
+		}
+		return null;
+	}
+
+	private static String getTickerFromQTBytes(byte[] bytes) {
+		try {
+			String beanstr = new String(bytes);
+			String systemTicker = null;
+			StringTokenizer st = new StringTokenizer(beanstr, "||");
+			st.nextToken();
+			systemTicker = (st.nextToken()).trim();
+			return systemTicker;
+		} catch (Exception e) {
+		}
+		return null;
+	}
+
+	public static boolean isMontageSymbol(String ticker) {
+		if (ticker == null)
+			return false;
+		if (ticker.length() < 3)
+			return false;
+		if (!("" + ticker.trim().charAt(ticker.length() - 2)).equalsIgnoreCase(MONTAGE_IDENTIFIER)) {
+			return false;
+		} else
+			return true;
+	}
+
+	public static boolean isOptionSymbol(String s) {
+		if (s.startsWith(OPTION_INDICATOR) && !isMontageSymbol(s))
+			return (true);
+		return (false);
+	}
+
+	private static boolean isFutureOptionSymbol(String s) {
+		if (s.startsWith(FUTURE_OPTION_INDICATOR) && !isMontageSymbol(s))
+			return (true);
+		return (false);
+	}
+
+	public static boolean isOptionRegionalSymbol(String s) {
+		if (s.startsWith(OPTION_INDICATOR) && isMontageSymbol(s))
+			return (true);
+		return (false);
+	}
+
+}

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="src" path="src"/>
+	<classpathentry kind="lib" path="C:/Users/SONY/OneDrive/Desktop/workspace-cpd/tacpoint/jars/acme.jar"/>
+	<classpathentry kind="lib" path="C:/Users/SONY/OneDrive/Desktop/workspace-cpd/tacpoint/jars/arith.jar"/>
+	<classpathentry kind="lib" path="C:/Users/SONY/OneDrive/Desktop/workspace-cpd/tacpoint/jars/cdkjava3300.jar"/>
+	<classpathentry kind="lib" path="C:/Users/SONY/OneDrive/Desktop/workspace-cpd/tacpoint/jars/concurrent.jar"/>
+	<classpathentry kind="lib" path="C:/Users/SONY/OneDrive/Desktop/workspace-cpd/tacpoint/jars/iBusJMS.jar"/>
+	<classpathentry kind="lib" path="C:/Users/SONY/OneDrive/Desktop/workspace-cpd/tacpoint/jars/j2ee.jar"/>
+	<classpathentry kind="lib" path="C:/Users/SONY/OneDrive/Desktop/workspace-cpd/tacpoint/jars/paxcomp.jar"/>
+	<classpathentry kind="lib" path="C:/Users/SONY/OneDrive/Desktop/workspace-cpd/tacpoint/jars/tacpoint.jar"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="output" path="bin"/>
+</classpath>

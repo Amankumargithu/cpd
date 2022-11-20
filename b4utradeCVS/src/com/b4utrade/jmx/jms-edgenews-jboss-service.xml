@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE server>
+<!-- $Id: jms-edgenews-jboss-service.xml,v 1.1 2014/01/14 07:11:28 aman Exp $ -->
+
+<!-- ===================================================================== -->
+<!--                                                                       -->
+<!--  JBoss Server Configuration                                           -->
+<!--                                                                       -->
+<!-- ===================================================================== -->
+
+<server>
+
+  <!--
+     | The Classpath element is needed for http based installations
+     | we need to list all the archives that the server needs at boot
+     | if the installation is local and the configuration is from file
+     | then there is no need to list the files and it should commented
+   -->
+
+  <classpath codebase="/usr/jboss-3.0.0_tomcat-4.0.3/server/default/lib" archives="b4utrade_com.jar"/>
+
+  <!-- ==================================================================== -->
+  <!-- AlertInitializer Initialization                                      -->
+  <!-- ==================================================================== -->
+  <mbean code="com.b4utrade.jmx.EdgeNewsInitializer" name="b4utrade:service=EdgeNewsInitializer"/>
+
+</server>

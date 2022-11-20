@@ -1,0 +1,26 @@
+apply plugin: 'java'
+apply plugin: 'eclipse'
+apply plugin: 'java-library-distribution'
+
+sourceCompatibility = 1.8
+version = '1.0'
+jar {
+    manifest {
+        attributes 'Implementation-Title': 'EquityRegionalCPD', 'Implementation-Version': 1.0
+    }
+}
+
+repositories {
+    mavenCentral()
+     maven {
+        url = uri("https://maven.pkg.github.com/financeware/eqp-quodd-common")
+        credentials {
+            username = project.findProperty("gpr.user") ?: "quodd-org-svc-account"
+            password = project.findProperty("gpr.token") ?: "secrets.ORG_SVC_ACCOUNT_TOKEN"
+        }
+   }
+}
+dependencies {
+    compile project(':EJBinterfaces')
+    compile fileTree(dir: 'jars', include: ['*.jar'])
+}

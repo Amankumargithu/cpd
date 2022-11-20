@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!-- An Ant build file for the MarketData EJB
+-->
+
+<project name="B4UTrade EJB Build Script" default="ejb-jar" basedir=".">
+    
+ 
+
+
+  
+
+</project>

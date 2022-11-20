@@ -1,0 +1,4 @@
+Manifest-Version: 1.0
+Implementation-Title: QuoddCommonCPD
+Implementation-Version: 1.0
+

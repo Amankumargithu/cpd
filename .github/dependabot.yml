@@ -1,0 +1,61 @@
+# To get started with Dependabot version updates, you'll need to specify which
+# package ecosystems to update and where the package manifests are located.
+# Please see the documentation for all configuration options:
+# https://help.github.com/github/administering-a-repository/configuration-options-for-dependency-updates
+
+version: 2
+updates:
+  - package-ecosystem: "gradle" # See documentation for possible values
+    directory: "/AlertCpd/" # Location of package manifests
+    schedule:
+      interval: "weekly"
+
+  - package-ecosystem: "gradle" # See documentation for possible values
+    directory: "/BondCPD/" # Location of package manifests
+    schedule:
+      interval: "weekly"      
+
+  - package-ecosystem: "gradle" # See documentation for possible values
+    directory: "/CanadianCPD/" # Location of package manifests
+    schedule:
+      interval: "weekly"
+
+  - package-ecosystem: "gradle" # See documentation for possible values
+    directory: "/djnewsCPD/" # Location of package manifests
+    schedule:
+      interval: "weekly"
+
+  - package-ecosystem: "gradle" # See documentation for possible values
+    directory: "/EquityCPD/" # Location of package manifests
+    schedule:
+      interval: "weekly"
+
+  - package-ecosystem: "gradle" # See documentation for possible values
+    directory: "/GidsCPD/" # Location of package manifests
+    schedule:
+      interval: "weekly"
+
+  - package-ecosystem: "gradle" # See documentation for possible values
+    directory: "/IndexCPD/" # Location of package manifests
+    schedule:
+      interval: "weekly"
+
+  - package-ecosystem: "gradle" # See documentation for possible values
+    directory: "/MutualFundCPD/" # Location of package manifests
+    schedule:
+      interval: "weekly"
+
+  - package-ecosystem: "gradle" # See documentation for possible values
+    directory: "/NasdaqBasicCPD/" # Location of package manifests
+    schedule:
+      interval: "weekly"  
+
+  - package-ecosystem: "gradle" # See documentation for possible values
+    directory: "/NewsEdgeCPD/" # Location of package manifests
+    schedule:
+      interval: "weekly"  
+
+  - package-ecosystem: "gradle" # See documentation for possible values
+    directory: "/OtcCPD/" # Location of package manifests
+    schedule:
+      interval: "weekly"                                                    

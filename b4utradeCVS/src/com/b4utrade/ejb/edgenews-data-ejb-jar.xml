@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<ejb-jar>
+     <description>B4UTrade Edge News EJB Cache </description>
+     <display-name>B4UTrade Edge News EJBs</display-name>
+     <enterprise-beans>
+      
+       <session>
+         <ejb-name>EdgeNewsData</ejb-name>
+         <home>com.b4utrade.ejb.EdgeNewsDataHome</home>
+         <remote>com.b4utrade.ejb.EdgeNewsData</remote>
+         <ejb-class>com.b4utrade.ejb.EdgeNewsDataBean</ejb-class>
+         <session-type>Stateless</session-type>
+         <transaction-type>Bean</transaction-type>
+       </session>
+       
+     </enterprise-beans>
+</ejb-jar>

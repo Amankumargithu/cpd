@@ -1,0 +1,29 @@
+package abcd;
+import java.io.*;
+import java.net.*;
+
+public class Httpsendrequest {
+
+	public static void main(String[] args) {
+	try {
+		Httpsendrequest.MyGETRequest();
+	} catch(Exception e) {
+		e.printStackTrace();
+	}
+
+	}
+	public static void MyGETRequest() throws IOException {
+    URL url = new URL("https://gillcogroup.com/");
+	    HttpURLConnection conection = (HttpURLConnection) url.openConnection();
+	    conection.setRequestMethod("GET");
+	    int responseCode = conection.getResponseCode();
+	    System.out.println(responseCode);
+	 //   if (responseCode != 200) {
+	   // 	System.out.println("unable to fetch data");
+	     //  }
+	    
+	}
+
+
+}
+	

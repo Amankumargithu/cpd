@@ -1,0 +1,228 @@
+{
+	"info": {
+		"_postman_id": "3a761e94-1d4a-4cc0-9181-39d3d72287cc",
+		"name": "cpds Copy",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "tsxcpd",
+			"item": [
+				{
+					"name": "List root",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{domain}}/tsxcpd/list/root",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"tsxcpd",
+								"list",
+								"root"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "List meta",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{domain}}/tsxcpd/list/meta/313",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"tsxcpd",
+								"list",
+								"meta",
+								"313"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "unsubscribe ticker",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{domain}}/tsxcpd/unsubscribe?ticker=XTC.CA/TO",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"tsxcpd",
+								"unsubscribe"
+							],
+							"query": [
+								{
+									"key": "ticker",
+									"value": "XTC.CA/TO"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "subscribe ticker",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{domain}}/tsxcpd/subscribe?ticker=XTC.CA/TO",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"tsxcpd",
+								"subscribe"
+							],
+							"query": [
+								{
+									"key": "ticker",
+									"value": "XTC.CA/TO"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Snap",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{domain}}/tsxcpd/snap?ticker=XTC.T&dataType=313",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"tsxcpd",
+								"snap"
+							],
+							"query": [
+								{
+									"key": "ticker",
+									"value": "XTC.T"
+								},
+								{
+									"key": "dataType",
+									"value": "313"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "List pending",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{domain}}/tsxcpd/list/pending",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"tsxcpd",
+								"list",
+								"pending"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Snap Dump",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{domain}}/tsxcpd/snap/dump/313",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"tsxcpd",
+								"snap",
+								"dump",
+								"313"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Snap List",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\"XTC.T\":[\"713\",\"714\"]}"
+						},
+						"url": {
+							"raw": "{{domain}}/tsxcpd/snap/list",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"tsxcpd",
+								"snap",
+								"list"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Stat",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{domain}}/tsxcpd/stat",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"tsxcpd",
+								"stat"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "List image",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{domain}}/tsxcpd/list/image",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"tsxcpd",
+								"list",
+								"image"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}

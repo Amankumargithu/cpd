@@ -1,0 +1,27 @@
+package dogstatsd;
+import com.timgroup.statsd.NonBlockingStatsDClientBuilder;
+import com.timgroup.statsd.StatsDClient;
+
+public class stasd {
+
+	public static void main(String[] args) throws Exception {
+		System.out.println("dogstatsid");
+		
+		// TODO Auto-generated method stub
+		StatsDClient statsd = new NonBlockingStatsDClientBuilder()
+	            .prefix("statsd")
+	            .hostname("localhost")
+	            .port(8125)
+	            .build();
+		for (int i = 0; i < 10; i++) {
+           // statsd.incrementCounter("example_metric.increment", new String[]{"environment:dev"});
+            statsd.decrementCounter("example_metric.decrement", new String[]{"environment:dev"});
+            // statsd.count("example_metric.count", 2, new String[]{"environment:dev"});
+            Thread.sleep(100);
+            System.out.println(i);
+		}
+
+
+	}
+
+}

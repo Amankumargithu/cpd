@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<ejb-jar>
+     <description>B4UTrade EJB Cache </description>
+     <display-name>B4UTrade EJBs</display-name>
+     <enterprise-beans>
+      
+       <session>
+         <ejb-name>RegionalData</ejb-name>
+         <home>com.b4utrade.ejb.RegionalDataHome</home>
+         <remote>com.b4utrade.ejb.RegionalData</remote>
+         <ejb-class>com.b4utrade.ejb.RegionalDataBean</ejb-class>
+         <session-type>Stateless</session-type>
+         <transaction-type>Bean</transaction-type>
+       </session>
+     </enterprise-beans>
+</ejb-jar>

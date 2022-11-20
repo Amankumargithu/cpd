@@ -1,0 +1,275 @@
+package com.quodd.future;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+
+import com.b4utrade.bean.StockOptionBean;
+import com.quodd.util.FutureDataComparator;
+import com.quodd.util.FuturesUtility;
+import com.quodd.util.NTPLogger;
+
+import QuoddFeed.msg.BlobTable;
+import QuoddFeed.msg.Image;
+import ntp.bean.QTCPDMessageBean;
+
+public class FuturesMappingSymbolsCache {
+
+	private ConcurrentHashMap<String, String> futureSymbolMap = new ConcurrentHashMap<String, String>();
+	private HashMap<String, ArrayList<String>> uiFutureSymbolMapping = new HashMap<String, ArrayList<String>>(); 
+
+	private ConcurrentHashMap<String, StockOptionBean> fundamentalMap = new ConcurrentHashMap<String, StockOptionBean>();
+	private ConcurrentHashMap<String, HashMap<String, StockOptionBean>> baseSymbolMap = new ConcurrentHashMap<String, HashMap<String,StockOptionBean>>();
+	private ConcurrentHashMap<String, HashMap<String, StockOptionBean>> descSymbolMap = new ConcurrentHashMap<String, HashMap<String,StockOptionBean>>();
+
+	private FuturesSnapController snapController = FuturesSnapController.getInstance();
+	private FuturesUtility utility = FuturesUtility.getInstance();
+	private static volatile FuturesMappingSymbolsCache futuresMappingSymbolCache =  new FuturesMappingSymbolsCache();
+
+	private static final int TICKER_POS = 0;
+	private static final int DESCRIPTION_POS = 1;
+
+	public static synchronized FuturesMappingSymbolsCache getInstance()
+	{
+		return futuresMappingSymbolCache;
+	}
+
+	private FuturesMappingSymbolsCache()	{}
+
+	public void addFutureMappedSymbol(String futureSymbol, String uiSymbol)
+	{
+		futureSymbolMap.put(futureSymbol, uiSymbol);
+		updateMappedUISymbolBeanToQueue(uiSymbol, futureSymbol);
+	}
+
+	public void addUiMappedFutureSymbols(String uisymbol, ArrayList<String> mappedList)
+	{
+		uiFutureSymbolMapping.put(uisymbol, mappedList);
+	}
+
+	public void addUiMappedFutureSymbol(String uiSymbol , String mappedSymbol){
+		ArrayList<String> mappedSymbolList = uiFutureSymbolMapping.get(uiSymbol);
+		if(mappedSymbolList == null){
+			mappedSymbolList = new ArrayList<String>();
+			uiFutureSymbolMapping.put(uiSymbol, mappedSymbolList);
+		}
+		if(!mappedSymbolList.contains(mappedSymbol))
+			mappedSymbolList.add(mappedSymbol);
+	}
+
+	public HashMap<String, ArrayList<String>> getUiFutureSymbolMap()
+	{
+		System.out.println("uiFutureSymbolMap : "+uiFutureSymbolMapping);
+		return uiFutureSymbolMapping;
+	}
+	public void addFundamentalBean(String ticker, StockOptionBean bean)
+	{
+		fundamentalMap.put(ticker, bean);
+	}
+
+	public String getUIMappedSymbol(String futureSymbol)
+	{
+		return futureSymbolMap.get(futureSymbol);
+	}
+
+	public void storeMappingByDescription(StockOptionBean sob, String desc) {
+		try{
+			String instrName = desc;
+			if(desc.equals("") || desc == null){
+				return;
+			}
+			int comma = desc.indexOf(',');
+			if(comma>0){
+				instrName = desc.substring(0,comma);
+			}
+			HashMap<String, StockOptionBean> temp =  descSymbolMap.get(instrName);
+			if (temp == null) {
+				temp = new HashMap<String, StockOptionBean>();
+				temp.put(desc,sob );
+				descSymbolMap.put(instrName, temp);
+			} else 
+				temp.put(desc,sob );
+		}catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
+	public void storeMappingByBaseSymbol(StockOptionBean sob, String underlyingTicker, String ticker) {
+		HashMap<String, StockOptionBean> temp =  baseSymbolMap.get(underlyingTicker);
+		if (temp == null) {
+			temp = new HashMap<String, StockOptionBean>();
+			temp.put(ticker, sob);
+			baseSymbolMap.put(underlyingTicker, temp);
+		} else {
+			temp.put(ticker, sob);
+		}
+	}
+
+	public StockOptionBean getFundamentalData(String ticker)
+	{
+		StockOptionBean bean = fundamentalMap.get(ticker);
+		if(bean == null)
+		{
+			Image image = snapController.getFuturesFundamentalData(ticker);
+			if(image == null)
+			{
+				NTPLogger.warning("Null IMAGE for " + ticker);
+				return null;
+			}
+			bean = new StockOptionBean();
+			bean.setTickerInDB(ticker);
+			bean.setTicker(ticker);
+			bean.setExchange(utility.getExchange(image.protocol(), ticker));
+			bean.setExpirationDate(FuturesUtility.getInstance().getExpirationDate(image._settleDate));
+			bean.setContractSize(99999999);
+			bean.setLastClosedPrice(image._close);
+			bean.setSecurityDesc(image.Description());
+			bean.setHighIn52Week(0.0);
+			bean.setLowIn52Week(0.0);
+			bean.setOpenInterest(image._openVol);
+			bean.setOpenPrice(image._open);
+			bean.setOpenPriceRange2(image._open2);
+			addFundamentalBean(ticker, bean);
+		}
+		return bean;
+	}
+
+	public HashSet<StockOptionBean> getFuturesChain(String s)
+	{
+		HashSet<StockOptionBean> resultSet = new HashSet<StockOptionBean>();
+		HashMap<String, StockOptionBean> temp =  baseSymbolMap.get(s);
+		if(temp == null)
+		{
+			BlobTable blobTable = snapController.getFutureChain(s);
+			if(blobTable != null)
+			{
+				int rowCount = blobTable.nRow();
+				for (int count = 0; count < rowCount; count++)
+				{
+					String ticker = blobTable.GetCell(count, TICKER_POS);
+					String desc = blobTable.GetCell(count, DESCRIPTION_POS);
+					if(!utility.validateFuturesSymbol(s, ticker))
+					{
+						NTPLogger.dropSymbol(ticker, "Invalid");
+						continue;
+					}
+					StockOptionBean sob = new StockOptionBean();
+					sob.setTicker(ticker);
+					System.out.println("Chain " + ticker + " " + s);
+					sob.setUnderlyingStockTicker(s);
+					sob.setExchange("N/A");
+					sob.setSecurityDesc(desc);
+					storeMappingByBaseSymbol( sob, s, ticker);
+					storeMappingByDescription( sob, desc);
+					resultSet.add(sob);
+				}
+			}
+		}
+		else
+			resultSet.addAll(temp.values());
+		return resultSet;
+	}
+
+	public ArrayList<StockOptionBean> getFutureChainByDescription(String description,int pagingIndex,boolean isFilterOn)
+	{
+		ArrayList<StockOptionBean> results = new ArrayList<StockOptionBean>();
+		if ( description == null || "".equals(description.trim()) || description.length()<2) 
+			return results;
+		ArrayList<StockOptionBean> tempList = new ArrayList<StockOptionBean>();
+		try {
+			Set<String> keys = descSymbolMap.keySet();
+			for(String key : keys)
+			{
+				String newKey = key.toUpperCase();
+				description = description.toUpperCase();
+				if (newKey.contains(description)) 
+				{
+					HashMap<String,StockOptionBean> temp = descSymbolMap.get(key);
+					tempList.addAll(temp.values());
+				}
+			}
+			if(tempList!= null && tempList.size() > 0) 
+				Collections.sort(tempList, new FutureDataComparator());
+			int startIndex = pagingIndex*100;
+			int endIndex = (pagingIndex+1)*100 + 1;
+			if(isFilterOn ) {
+				tempList = filterElectronicContracts(tempList);
+				int size = tempList.size();             
+				if(endIndex>size) {
+					results.addAll(tempList.subList(startIndex, size) ); 
+				}else {
+					results.addAll(tempList.subList(startIndex, endIndex)) ;
+				}
+			}
+			else {
+				int size = tempList.size();
+				if(endIndex>size) {
+					results.addAll(tempList.subList(startIndex, size) ); 
+				}else {
+					results.addAll(tempList.subList(startIndex, endIndex)) ;
+				}
+			}
+			return results;
+		} catch (Exception e) {
+			NTPLogger.error("FuturesMemoryDB getFutureChainByDescription " + description + " " + e.getMessage());
+			e.printStackTrace();
+		}
+		return results;
+	}
+
+	public ArrayList<StockOptionBean> getFutureChainByBaseSymbol(String underlyingTicker)
+	{ 	
+		HashMap<String, StockOptionBean> map = null;
+		ArrayList<StockOptionBean> results = new ArrayList<StockOptionBean>();
+		try {
+			if ( underlyingTicker == null || "".equals(underlyingTicker.trim())) 
+				return results;
+			map = baseSymbolMap.get(underlyingTicker);
+			System.out.println(baseSymbolMap.size());
+			if(map != null)
+			{
+				results.addAll( map.values());
+				Collections.sort(results, new FutureDataComparator());
+			}
+			return results;
+		} catch (Exception e) {
+			NTPLogger.error("FuturesMemoryDB getFutureChainByBaseSymbol " + underlyingTicker + " " + e.getMessage());
+		}
+		return results;
+	}
+
+	private ArrayList<StockOptionBean> filterElectronicContracts( ArrayList<StockOptionBean> list) {
+		ArrayList<StockOptionBean> temp = new ArrayList<StockOptionBean>();
+		for(StockOptionBean sob : list) {
+			String ticker = sob.getTicker();
+			if(! ticker.endsWith(".P")) 
+				temp.add(sob);
+		}
+		return temp;
+	}
+
+	public void updateMappedUISymbolBeanToQueue(String uiSymbol, String futureSymbol){
+		if(uiSymbol == null || futureSymbol == null)
+			return;
+		if(futureSymbol.endsWith(".P"))
+			return;
+		Map<String, QTCPDMessageBean> qtMap = FuturesQTMessageQueue.getInstance().getSubsData();
+		QTCPDMessageBean cachedBean = qtMap.get(futureSymbol);
+		if (cachedBean != null){
+			QTCPDMessageBean bean = null;
+			try {
+				bean = (QTCPDMessageBean) cachedBean.clone();
+				bean.setTicker(uiSymbol);
+				bean.setSystemTicker(uiSymbol);
+				FuturesQTMessageQueue.getInstance().getSubsData().put(uiSymbol,bean);
+				FuturesQTMessageQueue.getInstance().getmQueue().add(uiSymbol,bean);
+			} catch (CloneNotSupportedException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+}

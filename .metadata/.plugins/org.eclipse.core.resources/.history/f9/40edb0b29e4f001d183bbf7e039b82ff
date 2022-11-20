@@ -1,0 +1,66 @@
+package abcd;
+import java.io.*;
+import java.net.*;
+
+import com.tacpoint.util.Environment;
+
+public class Httpsendrequest {
+
+	public static void main(String[] args) {
+	try {
+		Httpsendrequest.MyGETRequest();
+	} catch(Exception e) {
+		e.printStackTrace();
+	}
+
+	}
+	public static void MyGETRequest() throws IOException {
+//	    URL url = new URL("http://www6.quodd.com/ftrcpd/stockOption?ticker=/GCZ22");
+//	    String readLine = null;
+//	    HttpURLConnection conection = (HttpURLConnection) url.openConnection();
+//	    conection.setRequestMethod("GET");
+//	  //  conection.setRequestProperty("ticker", "GOLD"); 
+//	    int responseCode = conection.getResponseCode();
+//
+//
+//	    if (responseCode == HttpURLConnection.HTTP_OK) {
+//	        BufferedReader in = new BufferedReader(
+//	            new InputStreamReader(conection.getInputStream()));
+//	        StringBuffer response = new StringBuffer();
+//	        while ((readLine = in .readLine()) != null) {
+//	            response.append(readLine);
+//	        } in .close();
+//	        byte[] abc = response.toString().getBytes("utf-8");
+//	        System.out.println("byte array Result " + abc);
+//	        String str = new String(abc);
+//	        System.out.println("JSON String Result " + str);
+//	        System.out.println("JSON String Result " + response.toString());
+//              } else {
+//	        System.out.println("GET NOT WORKED");
+//	    }
+//
+//	}
+//
+
+//}
+		// futuresCache = null;
+//			String spotSymbolUrl = Environment.get("FUTURE_SPOT_SYMBOL_URL");
+//			try {
+//				URL url = new URL(spotSymbolUrl);
+//				HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
+//				urlConnection.setRequestMethod("GET");
+//				urlConnection.setDoOutput(true);
+//				int responseCode = urlConnection.getResponseCode();
+//				if (responseCode != 200) {
+//				//	log.error("SymbolUpdaterCache : Unable to fetch spot symbol data");
+//				}
+//				String jsonString = "";
+//				try (BufferedReader br = new BufferedReader(new InputStreamReader(urlConnection.getInputStream()));) {
+//					jsonString = br.readLine();
+//				}
+//				urlConnection.disconnect();
+//				//  futuresCache = gson.fromJson(jsonString, gsonMapType);
+//			} catch (Exception exc) {
+//				log.error("Exception encountered while trying to get TickerLookUp Data.", exc);
+//			}
+//	}

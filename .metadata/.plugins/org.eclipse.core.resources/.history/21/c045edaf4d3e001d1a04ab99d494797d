@@ -1,0 +1,399 @@
+/**
+ * QuoteAsXMLDataFormatter.java
+ *
+ * @author Copyright (c) 2003 by Tacpoint Technologies, Inc. All Rights Reserved.
+ * @version 1.0
+ */
+
+package com.b4utrade.datainterfaceserver;
+
+
+import java.beans.XMLEncoder;
+import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.text.DecimalFormat;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.Enumeration;
+import java.util.Hashtable;
+import java.util.Map;
+import java.util.StringTokenizer;
+
+import javax.servlet.ServletOutputStream;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.jdom.Document;
+import org.jdom.Element;
+import org.jdom.Namespace;
+import org.jdom.output.XMLOutputter;
+
+import com.b4utrade.bean.StockOptionBean;
+import com.b4utrade.ejb.FutureDataHandler;
+import com.b4utrade.ejb.FutureOptionDataHandler;
+import com.b4utrade.ejb.OptionData;
+import com.b4utrade.ejb.OptionDataHandler;
+import com.b4utrade.helper.StockActivityHelper;
+import com.tacpoint.common.DefaultObject;
+import com.tacpoint.exception.BusinessException;
+import com.tacpoint.objectpool.ObjectPoolManager;
+import com.tacpoint.util.Environment;
+import com.tacpoint.util.Logger;
+
+/**
+ * This class formats Stock Quote data into a XML file format.
+ */
+
+public class QuoteAsXMLDataFormatter extends DefaultObject
+{
+
+	/**
+	 * Namespace object holding namespace information.
+	 */
+	private Namespace nspace = null;
+
+	/**
+	 * Handle to a logger.
+	 */
+	static Log log = LogFactory.getLog(QuoteAsXMLDataFormatter.class);
+
+	private Hashtable stockhash;
+
+
+	/**
+	 * Format data to be xml. This method requires data to be formatted to be
+	 * set first by calling the "setStockQuoteData" method.
+	 *
+	 * @return Formatted data to be downloaded.
+	 * @exception BusinessException
+	 */
+	public byte[] formatStockQuote(Hashtable stockhash) throws BusinessException
+	{
+		this.stockhash = stockhash;
+
+		Document doc = createDocument();
+		ByteArrayOutputStream baOut = new ByteArrayOutputStream();
+		outputDocument(doc, baOut);
+
+		return baOut.toByteArray();
+	}
+
+	/**
+	 * Creates a Document object from a hashtable of stock objects.
+	 *
+	 * @return Document object created from stock quote data.
+	 * @exception BusinessException
+	 */
+	private Document createDocument() throws BusinessException
+	{
+
+		Document doc = null;
+		try {
+			doc = createHeader();
+			if (stockhash == null || stockhash.size() == 0)
+				return doc;
+
+			Element root = doc.getRootElement();
+			Element record = null;
+
+			Enumeration keys = stockhash.keys();
+
+			//added each ticker
+			while(keys.hasMoreElements())
+			{
+				StockActivityHelper sahelper = (StockActivityHelper)(stockhash.get((String)keys.nextElement()));
+				if (sahelper == null) continue;
+
+				String stream = new String(sahelper.getStockStream());
+				
+				// add new "stock Quote" element
+				record = new Element("stockQuote", nspace);
+				StringTokenizer st = new StringTokenizer(stream, "||");
+				st.nextToken();
+				record.addContent(new Element("ticker", nspace).addContent(st.nextToken()));
+				record.addContent(new Element("lastPrice", nspace).addContent(st.nextToken()));
+				record.addContent(new Element("openPrice", nspace).addContent(st.nextToken()));
+				record.addContent(new Element("percentChange", nspace).addContent(st.nextToken()));
+				record.addContent(new Element("changePrice", nspace).addContent(st.nextToken()));
+				record.addContent(new Element("dayHigh", nspace).addContent(st.nextToken()));
+				record.addContent(new Element("dayLow", nspace).addContent(st.nextToken()));
+				record.addContent(new Element("bidSize", nspace).addContent(st.nextToken()));
+				record.addContent(new Element("askSize", nspace).addContent(st.nextToken()));
+				record.addContent(new Element("volume", nspace).addContent(st.nextToken()));
+				record.addContent(new Element("lastTradeVolume", nspace).addContent(st.nextToken()));
+				record.addContent(new Element("bidPrice", nspace).addContent(st.nextToken()));
+				record.addContent(new Element("askPrice", nspace).addContent(st.nextToken()));
+				record.addContent(new Element("messageType", nspace).addContent(st.nextToken()));
+				record.addContent(new Element("lastClosedPrice", nspace).addContent(st.nextToken()));
+				record.addContent(new Element("extendedLastPrice", nspace).addContent(st.nextToken()));
+				record.addContent(new Element("extendedPercentChange", nspace).addContent(st.nextToken()));
+				record.addContent(new Element("extendedChangePrice", nspace).addContent(st.nextToken()));
+				record.addContent(new Element("extendedLastTradeVolume", nspace).addContent(st.nextToken()));
+				record.addContent(new Element("extendedMarketCenter", nspace).addContent(st.nextToken()));
+				record.addContent(new Element("extendedUpDownTick", nspace).addContent(st.nextToken()));
+				record.addContent(new Element("tickFlag", nspace).addContent(st.nextToken()));
+				record.addContent(new Element("openPriceRange1", nspace).addContent(st.nextToken()));
+				record.addContent(new Element("openPriceRange2", nspace).addContent(st.nextToken()));
+				record.addContent(new Element("lastClosedPriceRange1", nspace).addContent(st.nextToken()));
+				record.addContent(new Element("lastClosedPriceRange2", nspace).addContent(st.nextToken()));
+				record.addContent(new Element("tradeDate", nspace).addContent(st.nextToken()));
+				record.addContent(new Element("lastTradeTime", nspace).addContent(st.nextToken()));
+				record.addContent(new Element("Exchange", nspace).addContent(st.nextToken()));
+				record.addContent(new Element("AskExchangeCode", nspace).addContent(st.nextToken()));
+				record.addContent(new Element("BidExchangeCode", nspace).addContent(st.nextToken()));
+				record.addContent(new Element("MarketCenter", nspace).addContent(st.nextToken()));
+				
+				record.addContent(new Element("VWAP", nspace).addContent(st.nextToken()));
+				record.addContent(new Element("protocolID", nspace).addContent(st.nextToken()));
+				record.addContent(new Element("settlementPrice", nspace).addContent(st.nextToken()));
+				record.addContent(new Element("unabridged", nspace).addContent(st.nextToken()));
+				record.addContent(new Element("limitUpDown", nspace).addContent(st.hasMoreTokens() ? st.nextToken() : " "));
+				record.addContent(new Element("extendedTradeDate", nspace).addContent(st.hasMoreTokens() ? st.nextToken() : " "));
+				record.addContent(new Element("extendedLastTradeTime", nspace).addContent(st.hasMoreTokens() ? st.nextToken() : " "));
+				record.addContent(new Element("volumePlus", nspace).addContent(st.hasMoreTokens() ? st.nextToken() : " "));
+				String isOption="false";
+				String strikePrice = "N/A";
+				String expiryDate = "N/A";
+
+				if (sahelper.getIsOption()) {
+					isOption = "true";
+
+					// retrieve option data ...
+					try {
+						StockOptionBean sob = getStockOptionBean(sahelper.getTicker());
+						if (sob != null) {
+							strikePrice = new String(""+sob.getStrikePrice());
+							expiryDate = sob.getExpirationDateAsString();                		
+						}
+						else {
+							strikePrice = "Unknown";
+							expiryDate = "Unknown";
+						}
+					}
+					catch (Exception e) {}
+				}
+				record.addContent(new Element("isOption", nspace).addContent(isOption));
+				record.addContent(new Element("strikePrice", nspace).addContent(strikePrice));
+				record.addContent(new Element("expiryDate", nspace).addContent(expiryDate));
+//				record.addContent(new Element("lastTradeDateTime", nspace).addContent(sahelper.getLastTradeDateGMT()+":"+sahelper.getLastTradeTimeGMT()));
+				root.addContent(record);
+			}
+
+		}
+		catch(Exception e) {
+			log.error("QuoteAsXMLDataFormatter.createDocument(): Exception. "+e.getMessage());
+			throw new BusinessException("QuoteAsXMLDataFormatter.createDocument(): Exception. "+e.getMessage());
+		}
+
+		return doc;
+	}
+
+	/**
+	 * Creates a Document object containing the header information.
+	 *
+	 * @exception BusinessException
+	 */
+	private Document createHeader() throws BusinessException
+	{
+
+		String nsName = Environment.get("XML_NAMESPACE_NAME");
+		String nsURI = Environment.get("XML_NAMESPACE_URI");
+		if (nsName == null || nsName.trim().length() == 0 ||
+				nsURI == null || nsURI.trim().length() == 0)
+			throw new BusinessException("QuoteAsXMLDataFormatter.createHeader(): unable to get [XML_NAMESPACE_NAME] or [XML_NAMESPACE_URI] values from property file.");
+
+		String schemaInstance = Environment.get("XML_SCHEMA_INSTANCE");
+		String schemaLocation = Environment.get("QUOTE_AS_XML_SCHEMA_LOCATION");
+		if (schemaInstance == null || schemaInstance.trim().length() == 0 ||
+				schemaLocation == null || schemaLocation.trim().length() == 0)
+			throw new BusinessException("QuoteAsXMLDataFormatter.createHeader(): unable to get [XML_SCHEMA_INSTANCE] or [QUOTE_AS_XML_SCHEMA_LOCATION] values from property file.");
+
+		// Create document namespace
+		nspace = Namespace.getNamespace(nsName, nsURI);
+		// Create a new document with root element.
+		Document doc = new Document(new Element("stockQuotes", nspace));
+
+		// Add schema namespace and location attribute to the root element.
+		Element root = doc.getRootElement();
+		Namespace nsSchema = Namespace.getNamespace("xsi", schemaInstance);
+		root.setAttribute("schemaLocation", schemaLocation, nsSchema);
+
+		return doc;
+	}
+
+	/**
+	 * Outputs a Document object to an OutputStream passed in.
+	 *
+	 * @param doc   Document object containing data to be output.
+	 * @param out   OutputStream to output the data.
+	 * @exception BusinessException
+	 */
+	private void outputDocument(Document doc, OutputStream out)
+			throws BusinessException
+	{
+		try {
+			XMLOutputter xOutput = new XMLOutputter("  ", true);
+			xOutput.output(doc, out);
+
+		}
+		catch (IOException e) {
+			throw new BusinessException("QuoteAsXMLDataFormatter.outputDocument() IO Exception.", e);
+		}
+	}
+
+	private StockOptionBean getStockOptionBean(String tickerName) {
+
+		if (tickerName.startsWith("O:"))
+		{
+			ObjectPoolManager opm = null;
+			OptionDataHandler odh = null;
+			StockOptionBean sobean = null;
+			int numTries = 0;
+			opm = ObjectPoolManager.getInstance();
+			odh = (OptionDataHandler) opm.getObject("OptionDataHandler", 1000);
+			while (numTries <= 1) {
+				try {
+					if (odh != null) {
+						OptionData od = odh.getRemoteInterface();
+						if (od != null) {
+							sobean = od.getStockOption(tickerName.toUpperCase());
+						} else {
+							log.error("QuoteAsXMLDataFormatter.execute - OptionData remote interface object is null.");
+							throw new Exception("Option Data Remote interface is null.");
+						}
+					} else
+						log.error("QuoteAsXMLDataFormatter.execute - OptionDataHandler is null.");
+					break;
+				} catch (Exception exc) {
+					Logger.log("QuoteAsXMLDataFormatter.execute - Exception encountered while trying to get Option Data.", exc);
+					numTries++;
+					if (odh != null)
+						odh.init();
+				}
+			}
+			if (odh != null)
+				opm.freeObject("OptionDataHandler", odh);
+			return sobean;
+		}
+		else if(tickerName.startsWith("FO:"))
+		{
+			ObjectPoolManager opm = null;
+			FutureOptionDataHandler odh = null;
+			StockOptionBean sobean = null;
+			int numTries = 0;
+			opm = ObjectPoolManager.getInstance();
+			odh = (FutureOptionDataHandler) opm.getObject("FutureOptionDataHandler", 1000);
+			while (numTries <= 1) {
+				try {
+					if (odh != null) {
+						OptionData od = odh.getRemoteInterface();
+						if (od != null) {
+							sobean = od.getStockOption(tickerName.toUpperCase());
+						} else {
+							log.error("QuoteAsXMLDataFormatter.execute - Future OptionData remote interface object is null.");
+							throw new Exception("Future Option Data Remote interface is null.");
+						}
+					} else
+						log.error("QuoteAsXMLDataFormatter.execute - FutureOptionDataHandler is null.");
+					break;
+				} catch (Exception exc) {
+					Logger.log("QuoteAsXMLDataFormatter.execute - Exception encountered while trying to get Future Option Data.", exc);
+					numTries++;
+					if (odh != null)
+						odh.init();
+				}
+			}
+			if (odh != null)
+				opm.freeObject("FutureOptionDataHandler", odh);
+			return sobean;
+		}
+		else if (tickerName.startsWith("/"))
+		{
+			String stockOptionUrl = Environment.get("FUTURE_STOCK_OPTION_URL");
+			StockOptionBean sobean = null;
+
+			try {
+				String urlStr = stockOptionUrl + tickerName;
+				URL url = new URL(urlStr);
+				HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
+				urlConnection.setRequestMethod("GET");
+				urlConnection.setDoOutput(true);
+				int responseCode = urlConnection.getResponseCode();
+				if (responseCode != 200) {
+					log.error("QuoddGetFutureAndCommodityDetailedQuoteAction : Unable to fetch stock option data");
+				}
+				String jsonString = "";
+				try (BufferedReader br = new BufferedReader(
+						new InputStreamReader(urlConnection.getInputStream()));) {
+					jsonString = br.readLine();
+				}
+				urlConnection.disconnect();
+				sobean = jsonToBean(jsonString);
+			} catch (Exception exc) {
+				log.error("Exception encountered while trying to get TickerLookUp Data.", exc);
+			}
+
+		}
+		return null;
+	}
+	
+	public static String parseFourDecimal(String inString)
+    {
+        DecimalFormat df = new DecimalFormat("######0.0000");
+
+        if (inString == null)
+        return "";
+
+        try
+        {
+            return df.format(Double.valueOf(inString.trim()).doubleValue());
+
+        } catch (NumberFormatException ne)
+        {
+           return inString;
+        }
+    }  
+	
+	private StockOptionBean jsonToBean(String jsonString) {
+		StockOptionBean sobean = new StockOptionBean();
+		try {
+		Map<String, Object> dataMap = gson.fromJson(jsonString, gsonMapType);
+		
+		sobean.setTicker((String) dataMap.get("ticker"));
+		sobean.setTickerInDB((String) dataMap.get("tickerInDB"));
+		Map<String, Double> dateMap = (Map<String, Double>) dataMap.get("expirationDate");
+		if(dateMap != null) {
+			LocalDateTime localDateTime = LocalDateTime.of((dateMap.get("year")).intValue(),
+					(dateMap.get("month")).intValue()+1, (dateMap.get("dayOfMonth")).intValue(),
+					(dateMap.get("hourOfDay")).intValue(), (dateMap.get("minute")).intValue(),
+					(dateMap.get("second")).intValue());
+
+			Date date = Date.from(localDateTime.atZone(ZoneId.systemDefault()).toInstant());
+			Calendar calendar = Calendar.getInstance();
+			calendar.setTime(date);
+			sobean.setExpirationDate(calendar);
+		}
+		sobean.setOpenInterest(((Double) dataMap.get("openInterest")).longValue());
+		sobean.setExchange((String) dataMap.get("exchange"));
+		sobean.setContractSize(((Double) dataMap.get("contractSize")).intValue());
+		sobean.setLastClosedPrice((double) dataMap.get("lastClosedPrice"));
+		sobean.setHighIn52Week((double) dataMap.get("highIn52Week"));
+		sobean.setLowIn52Week((double) dataMap.get("lowIn52Week"));
+		sobean.setSecurityDesc((String) dataMap.get("securityDesc"));
+		sobean.setOpenPrice((double) dataMap.get("openPrice"));
+		sobean.setOpenPriceRange2((double) dataMap.get("openPriceRange2"));
+		}
+		catch (Exception e) {
+			e.printStackTrace();
+			System.err.println("Exception for "+jsonString);
+		}
+		return sobean;
+	}
+}

@@ -1,0 +1,37 @@
+<HEADER>
+#Tue Jul 15 11:01:47 CEST 2003
+Customer-ID=002-025266-2
+Customer-Name=andy katz, tacpoint technologies
+Certificate-Version=2
+Check=3d30acba0ce8e454c93089bf0273c7a0
+</HEADER>
+
+<PRODUCT>
+#Tue Jul 15 11:01:47 CEST 2003
+Vendor=Softwired CH
+Expires=14.07.2004
+Product-Name=ibusdev
+Stack-Trace=
+Product-Version=4.1
+Contract-Type=enduser
+Start-Message=This software uses an iBus Runtime license - http://www.softwired-inc.com/
+Generated=15.07.2003
+Reg-Message=
+Rights-To-Use=0
+Check=9b6ff823ba182b8c2121e2873875c505
+</PRODUCT>
+
+<PRODUCT>
+#Tue Jul 15 11:01:47 CEST 2003
+Vendor=Softwired CH
+Expires=14.07.2004
+Product-Name=ibusrt
+Stack-Trace=
+Product-Version=4.1
+Contract-Type=enduser
+Start-Message=This software uses an iBus Runtime license - http://www.softwired-inc.com/
+Generated=15.07.2003
+Reg-Message=
+Rights-To-Use=0
+Check=4bbadbc70e2cbf40c1ef47e29374e4be
+Check=4bbadbc70e2cbf40c1ef47e29374e4be

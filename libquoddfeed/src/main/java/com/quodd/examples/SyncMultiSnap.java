@@ -1,0 +1,213 @@
+/******************************************************************************
+*
+*  SyncMultiSnap.java
+*     SyncMultiSnap() tester
+*
+*  REVISION HISTORY:
+*      2 JUN 2014 jcs  Created.
+*      7 OCT 2014 jcs  Build 83: No mo _mon
+*      1 DEC 2014 jcs  Build 89: Dawg
+*
+*  (c) 2011-2014 Quodd Financial
+*******************************************************************************/
+package com.quodd.examples;
+
+import java.io.*;
+import java.util.*;
+import QuoddFeed.msg.*;
+import QuoddFeed.util.*;
+
+
+/////////////////////////////////////////////////////////////////
+//
+//             c l a s s   S y n c M u l t i S n a p
+//
+/////////////////////////////////////////////////////////////////
+
+public class SyncMultiSnap extends UltraChan
+{
+   private String[]    _tkrs;
+   private int         _tmout;
+   private boolean     _bDawg;
+   private boolean     _bIMG;
+   private PrintStream cout;
+
+   //////////////////////
+   // Constructor
+   //////////////////////
+   SyncMultiSnap( String[] tkrs, int tmout )
+   {
+      super( UCconfig.Hostname(),
+             UCconfig.Port(),
+             UCconfig.Username( "username" ),
+             UCconfig.Password( "password" ),
+             false );
+      _tkrs  = tkrs;
+      _tmout = tmout;
+      _bDawg = ( tmout != 0 );
+      _bIMG  = UCconfig.HasKey( "DUMP_IMAGE" );
+      cout   = System.out;
+   }
+
+
+   //////////////////////
+   // Operations
+   //////////////////////
+   public int MultiSnap()
+   {
+      QuoddMsg[] res;
+      QuoddMsg   rtn;
+      long       t0, dd;
+      int        i, sz;
+      char       mt, mt2;
+      String     pn;
+
+      // OK to continue ...
+
+      t0  = System.currentTimeMillis();
+      res = WaitMultiSnap( _tkrs, null, _tmout );
+      dd  = System.currentTimeMillis() - t0;
+      sz  = res.length;
+      if ( !_bDawg )
+         cout.printf( "%d MultiSyncSnap()'s in %dmS\n", sz, dd );
+      for ( i=0; !_bDawg && i<sz; i++ ) {
+         rtn = res[i];
+         mt  = rtn.mt();
+         mt2 = rtn.mtSub();
+         pn    = rtn.getClass().getName();
+         if ( mt2 == _mtSubIMG )
+            OnImage( _tkrs[i], (Image)rtn );
+         else if ( mt == _mtDEAD )
+            OnStatus( _tkrs[i], (Status)rtn );
+      }
+      return sz;
+   }
+
+
+   //////////////////////
+   // UltraChan Interface
+   //////////////////////
+   /**
+    * Called when we connect to UltraCache.  We do nothing
+    */
+   public void OnConnect()
+   {
+      if ( !_bDawg )
+         cout.printf( "CONNECT %s:%d\n", uHost(), uPort() );
+   }
+
+   /**
+    * Called when we disconnect from UltraCache.  We do nothing here.
+    */
+   public void OnDisconnect()
+   {
+      if ( !_bDawg )
+         cout.printf( "DISCONNECT %s:%d\n", uHost(), uPort() );
+   }
+
+
+   //////////////////////
+   // IUpdate Interface
+   //////////////////////
+   public void OnImage( String StreamName, Image img )
+   {
+      _OnMsg( StreamName, "IMAGE", img );
+      cout.printf( "\n" );
+      if ( _bIMG )
+         cout.print( img.Dump() );
+   }
+
+   public void OnStatus( String StreamName, Status sts )
+   {
+      _OnMsg( StreamName, "DEAD", sts );
+      cout.printf( " : %s\n", sts.Text() );
+   }
+
+
+   //////////////////////
+   // Helpers
+   //////////////////////
+   private void _OnMsg( String StreamName, String mt, QuoddMsg m )
+   {
+      String  pt, ps, pa;
+      boolean bRTL;
+
+      if ( (ps=m.tkr()) == null )
+         ps = StreamName;
+      bRTL = ( m.RTL() != -1 );
+      pt   = m.pTimeMs();
+      cout.printf( "%s %-6s {%03d} %-6s; ", pt, mt, m.tag(), ps );
+      if ( bRTL )
+         cout.printf( "<%06d> ", m.RTL() );
+      cout.printf( "<<%02d>> ", m.protocol() );
+   }
+
+
+   /////////////////////////
+   //
+   //  main()
+   //
+   /////////////////////////
+   public static void main( String args[] )
+   {
+      SyncMultiSnap     cpd;
+      PrintStream       cout;
+      ArrayList<String> arr;
+      String[]          tkrs;
+      String            pFile, inp, ty, tm;
+      int               i, nt, sz, argc, tmout;
+      boolean           bDawg, bOK;
+
+      // Quick check
+
+      argc = args.length;
+      cout = System.out;
+      if ( ( argc > 0 ) && args[0].equals( "--version" ) ) {
+         cout.printf( "%s\n", QuoddMsg.Version() );
+         return;
+      }
+      pFile = ( argc > 0 ) ? args[0] : "./snap.tkrs";
+      tmout = ( argc > 1 ) ? Integer.parseInt( args[1] ) : 0;
+      bDawg = ( tmout != 0 );
+
+      // Read 'em in
+
+      arr = new ArrayList<String>();
+      try {
+         FileInputStream   fp  = new FileInputStream( pFile );
+         InputStreamReader isr = new InputStreamReader( fp );
+         LineNumberReader  rdr = new LineNumberReader( isr );
+
+         while( true ) {
+            inp = rdr.readLine();
+            if ( inp == null )
+               break;
+            arr.add( inp );
+         }
+      } catch( Exception e ) {
+         breakpoint();
+      }
+      nt = arr.size();
+      if ( nt > 0 ) {
+         tkrs = new String[nt];
+         for ( i=0; i<nt; tkrs[i] = arr.get( i ), i++ );
+         cpd = new SyncMultiSnap( tkrs, tmout );
+         cpd.Start();
+         sz = cpd.MultiSnap();
+         if ( bDawg ) {
+            bOK = ( sz == nt );
+            ty  = bOK ? "INFO  : " : "ERROR : ";
+            tm  = QuoddMsg.pDateTimeMs( System.currentTimeMillis() );
+            cout.printf( "[%s] %s %d of %d tickers\n", tm, ty, sz, nt );
+         }
+         else
+            cout.printf( "Shutting down ...\n" );
+         cpd.Stop();
+      }
+      else
+         cout.printf( "No tickers in file %s; Exitting ... \n", pFile );
+      if ( !bDawg )
+         cout.printf( "Done!!\n" );
+   }
+}
+

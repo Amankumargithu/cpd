@@ -1,0 +1,13 @@
+
+
+plugins {
+    id 'java-library'
+}
+
+repositories {
+    jcenter()
+}
+
+dependencies {
+       compile fileTree(dir: 'jars', include: ['*.jar'])
+}

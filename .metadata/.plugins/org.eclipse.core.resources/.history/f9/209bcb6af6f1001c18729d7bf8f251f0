@@ -1,0 +1,30 @@
+apply plugin: 'java'
+apply plugin: 'eclipse'
+apply plugin: 'java-library-distribution'
+sourceCompatibility = 1.8
+version = '1.0'
+
+repositories {
+    mavenCentral()
+    
+}
+repositories {
+    mavenCentral()
+    maven {
+       // url = uri("https://maven.pkg.github.com/zversal-quodd/common-projects")
+        url = uri("https://maven.pkg.github.com/financeware/eqp-quodd-common")
+        credentials {
+            username = project.findProperty("gpr.user") ?: System.getenv("GITHUB_ACTOR")
+            password = project.findProperty("gpr.token") ?: System.getenv("GITHUB_TOKEN")
+        }
+    }
+}
+
+dependencies {
+
+    //compile project(':QuoddCommon')
+    compile group: 'com.quodd', name: 'quoddcommon', version: '1.0.3'
+    compile group: 'net.sourceforge.javacsv', name: 'javacsv', version: '2.0'
+    compile group: 'mysql', name: 'mysql-connector-java', version: '8.0.29'
+}
+

@@ -1,0 +1,228 @@
+{
+	"info": {
+		"_postman_id": "3a761e94-1d4a-4cc0-9181-39d3d72287cc",
+		"name": "cpds Copy",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "idxcpd",
+			"item": [
+				{
+					"name": "Stat",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{domain}}/idxcpd/stat",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"idxcpd",
+								"stat"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Snap List",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\"I:DJI\":[\"725\"]}"
+						},
+						"url": {
+							"raw": "{{domain}}/idxcpd/snap/list",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"idxcpd",
+								"snap",
+								"list"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "unsubscribe ticker",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{domain}}/idxcpd/unsubscribe?ticker=I:DJI",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"idxcpd",
+								"unsubscribe"
+							],
+							"query": [
+								{
+									"key": "ticker",
+									"value": "I:DJI"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "List root",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{domain}}/idxcpd/list/root",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"idxcpd",
+								"list",
+								"root"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "List image",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{domain}}/idxcpd/list/image",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"idxcpd",
+								"list",
+								"image"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "subscribe ticker",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{domain}}/idxcpd/subscribe?ticker=I:DJI",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"idxcpd",
+								"subscribe"
+							],
+							"query": [
+								{
+									"key": "ticker",
+									"value": "I:DJI"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "List pending",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{domain}}/idxcpd/list/pending",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"idxcpd",
+								"list",
+								"pending"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Snap",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{domain}}/idxcpd/snap?ticker=I:DJI&dataType=325",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"idxcpd",
+								"snap"
+							],
+							"query": [
+								{
+									"key": "ticker",
+									"value": "I:DJI"
+								},
+								{
+									"key": "dataType",
+									"value": "325"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Snap Dump",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{domain}}/idxcpd/snap/dump/324",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"idxcpd",
+								"snap",
+								"dump",
+								"324"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "List meta",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{domain}}/idxcpd/list/meta/724",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"idxcpd",
+								"list",
+								"meta",
+								"724"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}

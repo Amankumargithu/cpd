@@ -1,0 +1,659 @@
+/**
+ * TFanOut.java
+ *
+ * @author Copyright (c) 2005 by Tacpoint Technologie, Inc.
+ *    All rights reserved.
+ * @version 1.0
+ */
+package com.tacpoint.publisher;
+
+import java.io.*;
+import java.util.*;
+import java.net.*;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
+import EDU.oswego.cs.dl.util.concurrent.ConcurrentHashMap;
+
+import com.tacpoint.jms.ReducedMessageInflator;
+
+public final class TFanOut
+{
+
+   private Thread subHandlerThread;
+
+   private static Log log = LogFactory.getLog(TFanOut.class);
+
+   private TMessageQueue messageQueue;
+   private String streamerUrl;
+
+   private String userId;
+   private String username;
+   private String password;
+
+   private ReducedMessageInflator messageInflator = null;
+   private TSubscriptionHandler subHandler;
+
+   private String mask;
+
+   Thread fanoutMonitorThread;
+   TFanOutMonitor fanoutMonitor;
+   TFanOutRunner fanoutRunner;
+
+   public TFanOut(String streamerUrl, String userId, String username, String password, String mask, TMessageQueue messageQueue, ReducedMessageInflator messageInflator)
+   {
+      this.streamerUrl = streamerUrl;
+
+      this.userId = userId;
+      this.username = username;
+      this.password = password;
+
+      this.mask = mask;
+      this.messageQueue = messageQueue;
+      this.messageInflator = messageInflator;
+
+      subHandler = new TSubscriptionHandler();
+      subHandler.setStreamerUrl(streamerUrl);
+      subHandler.setUserId(userId);
+      subHandler.setUsername(username);
+      subHandler.setPassword(password);
+      subHandler.setMask(mask);
+
+      subHandlerThread = new Thread(subHandler);
+      subHandlerThread.start();
+
+      fanoutRunner = new TFanOutRunner();
+      fanoutRunner.setMessageQueue(messageQueue);
+      fanoutRunner.setMessageInflator(messageInflator);
+      fanoutRunner.setStreamerUrl(streamerUrl);
+      fanoutRunner.setUserId(userId);
+      fanoutRunner.setUsername(username);
+      fanoutRunner.setPassword(password);
+      fanoutRunner.setSubscriptionHandler(subHandler);
+
+      fanoutMonitor = new TFanOutMonitor(null, fanoutRunner, subHandlerThread, subHandler);
+      fanoutMonitorThread = new Thread(fanoutMonitor);
+      fanoutMonitorThread.start();
+
+   }
+
+}
+
+class TFanOutMonitor implements Runnable {
+
+   private Thread fanOutRunnerThread;
+   private TFanOutRunner fanOutRunner;
+
+   private Thread subHandlerThread;
+   private TSubscriptionHandler subHandler;
+
+   private static Log log = LogFactory.getLog(TFanOutMonitor.class);
+
+   TFanOutMonitor(Thread fanOutRunnerThread, TFanOutRunner fanOutRunner, Thread subHandlerThread, TSubscriptionHandler subHandler) {
+      this.fanOutRunnerThread = fanOutRunnerThread;
+      this.fanOutRunner = fanOutRunner;
+      this.subHandlerThread = subHandlerThread;
+      this.subHandler = subHandler;
+   }
+
+   public void run() {
+
+      long curTime;
+
+      while (true) {
+
+         try {
+            if (fanOutRunnerThread == null) {
+
+               log.debug("Starting new Subscription handler thread.");
+
+               subHandler = subHandler.cloneMe();
+               subHandlerThread = new Thread(subHandler);
+
+               log.debug("Starting new Fan out runner thread.");
+
+               fanOutRunner = fanOutRunner.cloneMe();
+               fanOutRunner.setSubscriptionHandler(subHandler);
+               fanOutRunnerThread = new Thread(fanOutRunner);
+               fanOutRunnerThread.start();
+
+               subHandlerThread.start();
+            }
+         }
+         catch (Exception e) {
+            log.error("Exception encountered while restarting Fan Out thread - "+e.getMessage(),e);
+         }
+
+         try {
+            Thread.sleep(1000);
+         }
+         catch (InterruptedException iex) {}
+
+         curTime = System.currentTimeMillis();
+
+         if ( (curTime - fanOutRunner.getLastProcessTime()) > 60000) {
+
+            log.error("Halting Fan Out runner thread ... maximum idle process time has been exceeded.");
+
+            try {
+               fanOutRunnerThread.interrupt();
+            }
+            catch (Exception ex) {}
+
+            try {
+               subHandlerThread.interrupt();
+            }
+            catch (Exception ex) {}
+
+            fanOutRunnerThread = null;
+            fanOutRunner.setDoRun(false);
+            fanOutRunner.shutDownIO();
+
+            subHandler.setDoRun(false);
+            subHandlerThread = null;
+
+            synchronized (subHandler.currentSubscriptions) {
+               subHandler.currentSubscriptions.clear();
+            }
+         }
+      }
+   }
+}
+
+class TSubscriptionHandler implements Runnable {
+
+   private static Log log = LogFactory.getLog(TSubscriptionHandler.class);
+
+   private String BLANK = "";
+
+   private Object HEARTBEAT_MSG = new String("TACPOINT");
+   private String streamerUrl;
+   private String userId;
+   private String username;
+   private String password;
+
+   private String mask;
+
+   private boolean doRun = true;
+
+   String ACTION     = "ACTION=MODIFY";
+   String NEW_TOPICS = "NEW_TOPICS=";
+   String OLD_TOPICS = "OLD_TOPICS=";
+   
+   public HashMap currentSubscriptions = new HashMap();
+
+   public TSubscriptionHandler cloneMe() {
+
+      this.doRun = false;
+      TSubscriptionHandler subHandler = new TSubscriptionHandler();
+      subHandler.streamerUrl = streamerUrl;
+      subHandler.userId = userId;
+      subHandler.username = username;
+      subHandler.password = password;
+      subHandler.mask = mask;
+      return subHandler;
+
+   }
+
+   public void setStreamerUrl(String streamerUrl) {
+      this.streamerUrl = streamerUrl;
+   }
+
+   public void setUserId(String userId) {
+      this.userId = userId;
+   }
+
+   public void setUsername(String username) {
+      this.username = username;
+   }
+
+   public void setPassword(String password) {
+      this.password = password;
+   }
+
+   public void setMask(String mask) {
+      this.mask = mask;
+   }
+
+   public void setDoRun(boolean doRun) {
+      this.doRun = doRun;
+   }
+
+   public TSubscriptionHandler() {}
+
+   public String generateAddList() {
+
+      Set currentTopics = TDispatcher.MASTER_SUBSCRIPTIONS.keySet();
+
+      Iterator it = currentTopics.iterator();
+ 
+      StringBuffer addList = new StringBuffer();
+
+      boolean isFirstAddition = true;
+      boolean needsUpdate = false;
+
+      while (it.hasNext()) {
+         String topic = (String)it.next();
+
+         if (mask != null)
+            if (!topic.endsWith(mask))
+               continue;
+
+         if (!currentSubscriptions.containsKey(topic)) {
+            needsUpdate = true;
+            if (!isFirstAddition) {
+               addList.append(",");
+            }
+            else {
+               isFirstAddition = false;
+            }
+            addList.append(topic.toString());         
+            currentSubscriptions.put(topic,null);
+         }
+      }
+
+      if (needsUpdate) {
+         log.debug("About to add to list : "+addList.toString());
+         return addList.toString();
+      }
+
+      return BLANK;
+   }
+
+   public String generateRemoveList() {
+
+      ConcurrentHashMap master =  TDispatcher.MASTER_SUBSCRIPTIONS;
+
+      Iterator it = currentSubscriptions.keySet().iterator();
+ 
+      StringBuffer removeList = new StringBuffer();
+
+      boolean needsUpdate = false;
+      boolean isFirstAddition = true;
+
+      ArrayList removals = new ArrayList();
+
+      while (it.hasNext()) {
+
+         Object topic = it.next();
+
+         if (topic.equals(HEARTBEAT_MSG)) {
+            // don't want to remove this as it will cause the the producer on the other end to shut the socket down!
+            continue;
+         }
+
+         if (!master.containsKey(topic)) {
+            needsUpdate = true;
+            if (!isFirstAddition) {
+               removeList.append(",");
+            }
+            else {
+               isFirstAddition = false;
+            }
+            removeList.append(topic.toString());         
+            removals.add(topic);
+         }
+      }
+
+      it = removals.iterator();
+      while (it.hasNext()) {
+         currentSubscriptions.remove(it.next());
+      }
+
+      if (needsUpdate) {
+         log.debug("About to remove from list : "+removeList.toString());
+         return removeList.toString();
+      }
+
+      return BLANK;
+
+   }
+
+   private void alterSubscriptions(String action, String addAction, String addTopics, String removeAction, String removeTopics) {
+
+      InputStream inputStream = null;
+      OutputStream os = null;
+
+      URL url = null;
+      try {
+         url = new URL(streamerUrl);
+         URLConnection conn = url.openConnection();
+         conn.setDoOutput(true);
+         conn.setDoInput(true);
+         conn.setAllowUserInteraction(false);
+         conn.setUseCaches(false);
+
+         String authString = "Authorization";
+	 String authValue = "Basic "+new sun.misc.BASE64Encoder().encode(new String(username+":"+password).getBytes());
+
+         log.debug("Username - "+username);
+         log.debug("Password - "+password);
+
+         conn.setRequestProperty(authString, authValue);
+
+         StringBuffer query = new StringBuffer();
+         query.append("USERID=");
+         query.append(userId);
+         query.append("&");
+
+         query.append(action);
+         query.append("&");
+
+         query.append(addAction);
+         query.append(URLEncoder.encode(addTopics));
+         query.append("&");
+
+         query.append(removeAction);
+         query.append(URLEncoder.encode(removeTopics));
+         query.append("&");
+
+         query.append("SUBEND=true");
+         os = conn.getOutputStream();
+         os.write(query.toString().getBytes());
+         inputStream = conn.getInputStream();
+
+         log.debug("alterSubscriptions add topic list    : "+addTopics);
+         log.debug("alterSubscriptions remove topic list : "+removeTopics);
+
+      }
+      catch (Exception e) {
+         log.error("TSubscriptionHandler - Unable to connect to URL: "+url,e);
+         try {
+            currentSubscriptions.clear();
+         }
+         catch (Exception ce) {}
+         return;
+      }
+      finally {
+         try {
+            if (os != null)
+               os.flush();
+         }
+         catch (Exception osFlushException) {}
+         try {
+            if (os != null)
+               os.close();
+         }
+         catch (Exception osCloseException) {}
+         try {
+            if (inputStream != null)
+               inputStream.close();
+         }
+         catch (Exception isCloseException) {}
+      }
+   }
+ 
+   public void run() {
+
+      String addTopics = null;
+      String removeTopics = null;
+
+      long curTime = 0;
+      long beginTime = 0;
+
+      while (doRun) {
+
+         addTopics = generateAddList();
+         removeTopics = generateRemoveList();
+ 
+         if (addTopics.length() > 0 || removeTopics.length() > 0) {
+            alterSubscriptions(ACTION, NEW_TOPICS, addTopics, OLD_TOPICS, removeTopics);
+         }
+
+         try {
+            Thread.sleep(1000); 
+         }
+         catch (Exception tie) {}
+
+         curTime = System.currentTimeMillis();
+         if ( (curTime - beginTime) > 30000) {
+            log.debug("Current subscription list below:");
+            Iterator it = currentSubscriptions.keySet().iterator();
+            while (it.hasNext()) {
+               log.debug("Subscription topic: "+it.next());
+            }
+            beginTime = curTime;
+         }
+      }
+   } 
+}
+
+class TFanOutRunner implements Runnable {
+
+   private static Log log = LogFactory.getLog(TFanOutRunner.class);
+
+   private TMessageQueue messageQueue;
+   private String streamerUrl;
+   private String userId;
+   private String username;
+   private String password;
+
+   private ReducedMessageInflator messageInflator = null;
+   private TSubscriptionHandler subHandler;
+   private boolean doRun = true;
+   private long lastProcessTime = System.currentTimeMillis();
+
+   private InputStream inputStream;
+   private OutputStream outputStream;
+ 
+
+   public TFanOutRunner() {}
+
+   public TFanOutRunner cloneMe() {
+
+      this.doRun = false;
+      TFanOutRunner runner = new TFanOutRunner();
+      runner.streamerUrl = streamerUrl;
+      runner.messageQueue = messageQueue;
+      runner.userId = userId;
+      runner.username = username;
+      runner.password = password;
+      runner.messageInflator = messageInflator;
+      runner.subHandler = subHandler;
+      return runner;
+
+   }
+
+   public void setUsername(String username) {
+      this.username = username;
+   }
+
+   public void setPassword(String password) {
+      this.password = password;
+   }
+
+   public void setDoRun(boolean doRun) {
+      this.doRun = doRun;
+   }
+
+   public long getLastProcessTime() {
+      return lastProcessTime;
+   }
+
+   public void setMessageQueue(TMessageQueue messageQueue) {
+      this.messageQueue = messageQueue;
+   }
+
+   public void setMessageInflator(ReducedMessageInflator messageInflator) {
+      this.messageInflator = messageInflator;
+   }
+
+   public void setSubscriptionHandler(TSubscriptionHandler subHandler) {
+      this.subHandler = subHandler;
+   }
+
+   public void setStreamerUrl(String streamerUrl) {
+      this.streamerUrl = streamerUrl;
+   }
+
+   public void setUserId(String userId) {
+      this.userId = userId;
+   }
+ 
+   public void run() {
+
+      while (doRun) {
+
+         URL url = null;
+
+         try {
+            url = new URL(streamerUrl);
+            URLConnection conn = url.openConnection();
+            conn.setDoOutput(true);
+            conn.setDoInput(true);
+            conn.setAllowUserInteraction(false);
+            conn.setUseCaches(false);
+
+            String authString = "Authorization";
+	    String authValue = "Basic "+new sun.misc.BASE64Encoder().encode(new String(username+":"+password).getBytes());
+
+            log.debug("Username - "+username);
+            log.debug("Password - "+password);
+
+            conn.setRequestProperty(authString, authValue);
+
+            StringBuffer query = new StringBuffer();
+            query.append("USERID=");
+            query.append(userId);
+            query.append("&");
+
+            query.append("TOPICS");
+            query.append("=");
+            query.append("&SUBEND=true");
+            outputStream = conn.getOutputStream();
+            outputStream.write(query.toString().getBytes());
+            inputStream = conn.getInputStream();
+            log.debug("Successfully connected to remote streamer ["+streamerUrl+"].");
+
+            // need to re-init the subscription handler 
+            synchronized (subHandler.currentSubscriptions) {
+               subHandler.currentSubscriptions.clear();
+            }
+
+         }
+         catch (Exception e) {
+            log.error("TFanOutRunner - Unable to connect to URL: "+url,e);
+
+            try {
+               Thread.sleep(5000);
+            }
+            catch (Exception tsex) {}
+
+            continue;
+            
+         }
+         finally {
+            try {
+               if (outputStream != null)
+                  outputStream.flush();
+            }
+            catch (Exception osFlushException) {}
+            try {
+               if (outputStream != null)
+                  outputStream.close();
+            }
+            catch (Exception osCloseException) {}
+         }
+
+         byte[] response = new byte[2048*10];
+
+         int messageTerminatorByte = com.tacpoint.publisher.TConstants.TERMINATOR_BYTE;
+         int keyTerminatorByte = 44;
+         int bytesRead = 0;
+
+         ByteArrayOutputStream baos = new ByteArrayOutputStream(110);
+
+         int index = 0;
+         String key = null;
+
+         while ( doRun ) {
+
+            try {
+
+               bytesRead = inputStream.read(response);
+
+               if (bytesRead < 0) {
+                  log.error("TFanOutRunner - connection broken, exiting run method.");
+                  break;
+               }
+
+               lastProcessTime = System.currentTimeMillis();
+
+               for (int i=0; i<bytesRead; i++) {
+
+                  if (response[i] == messageTerminatorByte) {
+                  
+                     baos.write(response,i,1);
+                     TMessage msg = new TMessage();
+                     msg.setBaos(baos);
+ 
+                     try {
+                        if (messageInflator != null) {
+                           key = (String)messageInflator.getTopic(baos);
+                        }
+                        else {
+                           String entireMsg = new String(baos.toByteArray());
+
+                           // first check if this is an option quote!
+                           index = entireMsg.indexOf("||");
+                           if (index > 0) {
+                              key = entireMsg.substring(index+2,entireMsg.indexOf("||",index+2));
+                           }
+
+                           // must be an equity quote
+                           else {
+                              index = entireMsg.indexOf(",");
+                              System.out.println(index);
+                              key = entireMsg.substring(index+1,entireMsg.indexOf(",",index+1));
+                           }
+                        }
+                     }
+                     catch (Exception stringEx) {
+                        log.error("Exception while parsing message - "+stringEx.getMessage(),stringEx);
+                     }
+
+                     //log.debug("KEY = "+key);
+                     
+                     if (key == null) {
+                        baos.reset();
+                        continue;
+                     }
+                     
+                     msg.setKey(key);
+                     messageQueue.add(msg);
+
+                     baos = new ByteArrayOutputStream(110);
+
+                  }
+                  else {
+                     baos.write(response,i,1);
+                  }
+               }
+            }
+            catch (Exception e) {
+               if (doRun == false)
+                  break;
+               log.error("Exception encountered during TFanOutRunner run method - "+e.getMessage(),e);
+               break;
+            }
+         }
+      }
+   }
+
+   public void shutDownIO() {
+      try {
+         if (inputStream != null)
+	    inputStream.close();
+      }
+      catch (Exception ioCloseException) {}
+
+      try {
+	 if (outputStream != null)
+	    outputStream.close();
+      }
+      catch (Exception ioCloseException) {}
+   } 
+
+}
+

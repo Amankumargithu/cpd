@@ -1,0 +1,307 @@
+{
+	"info": {
+		"_postman_id": "3a761e94-1d4a-4cc0-9181-39d3d72287cc",
+		"name": "cpds Copy",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "otccpd",
+			"item": [
+				{
+					"name": "subscribe ticker",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{domain}}/otccpd/subscribe?ticker=TRTC",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"otccpd",
+								"subscribe"
+							],
+							"query": [
+								{
+									"key": "ticker",
+									"value": "TRTC"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "List Dually Quoted",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{domain}}/otccpd/list/duallyquoted",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"otccpd",
+								"list",
+								"duallyquoted"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "List Susbcribed",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{domain}}/otccpd/list/subscribed",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"otccpd",
+								"list",
+								"subscribed"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "List root",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{domain}}/otccpd/list/root",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"otccpd",
+								"list",
+								"root"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "unsubscribe ticker",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://www6.quodd.com/otccpd/unsubscribe?ticker=TRTC",
+							"protocol": "http",
+							"host": [
+								"www6",
+								"quodd",
+								"com"
+							],
+							"path": [
+								"otccpd",
+								"unsubscribe"
+							],
+							"query": [
+								{
+									"key": "ticker",
+									"value": "TRTC"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "List image",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{domain}}/otccpd/list/image",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"otccpd",
+								"list",
+								"image"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Stat",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{domain}}/otccpd/stat",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"otccpd",
+								"stat"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Snap Dump",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{domain}}/otccpd/snap/dump/303",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"otccpd",
+								"snap",
+								"dump",
+								"303"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "List meta",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{domain}}/otccpd/list/meta/303",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"otccpd",
+								"list",
+								"meta",
+								"303"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Snap List",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\"TRTC.PK\":[\"703\",\"704\"]}"
+						},
+						"url": {
+							"raw": "{{domain}}/otccpd/snap/list",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"otccpd",
+								"snap",
+								"list"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "List pending",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{domain}}/otccpd/list/pending",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"otccpd",
+								"list",
+								"pending"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "List Unique Pink",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{domain}}/otccpd/list/uniquepink",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"otccpd",
+								"list",
+								"uniquepink"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Snap",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{domain}}/otccpd/snap?ticker=TRTC.PK&dataType=303",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"otccpd",
+								"snap"
+							],
+							"query": [
+								{
+									"key": "ticker",
+									"value": "TRTC.PK"
+								},
+								{
+									"key": "dataType",
+									"value": "303"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "List tier",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{domain}}/otccpd/list/tier",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"otccpd",
+								"list",
+								"tier"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}

@@ -1,0 +1,208 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!-- An Ant build file for the MarketData EJB
+-->
+
+<project name="B4UTrade JMX SAR Build Script" default="service-sar" basedir=".">
+
+    <property name="basedir"           value="."/>    
+    <property name="build.sar.dir"     value="../../../../../ant/sar-build"/>
+    <property name="build.classes.dir" value="../../../../../ant/sar-build/classes"/>
+    <property name="sar.dist.dir"      value="../../../../../ant/dist"/>
+
+    <target name="compile">
+       <delete dir="${build.sar.dir}"/>
+       <delete dir="${build.classes.dir}"/>
+       <mkdir dir="${build.sar.dir}"/>
+       <mkdir dir="${build.classes.dir}"/>
+       <javac srcdir="${basedir}/../../../"
+            destdir="${build.classes.dir}"
+            includes="com/b4utrade/jmx/**"
+            debug="on"
+            deprecation="on"
+            optimize="off"
+       >
+       <classpath path="${classpath}" />
+       <include name="com/b4utrade/jmx/**" />
+       </javac>
+    </target>
+
+    <target name="service-sar" depends="compile">
+        
+        <mkdir dir="${build.sar.dir}/META-INF"/>
+        
+        <copy file="${basedir}/jms-consumer-jboss-service.xml" tofile="${build.sar.dir}/META-INF/jboss-service.xml" />
+        
+        <jar jarfile="${build.sar.dir}/jmsconsumer.sar">
+            <fileset dir="${build.classes.dir}">
+                <include name="com/b4utrade/jmx/InitJMSConsumerMBean.class" />
+                <include name="com/b4utrade/jmx/InitJMSConsumer.class" />
+            </fileset>
+            <fileset dir="${build.sar.dir}">
+                <include name="META-INF/jboss-service.xml" />
+            </fileset>
+        </jar>
+        
+        <delete file="${build.sar.dir}/META-INF/jboss-service.xml" />
+        
+        <copy file="${basedir}/jms-option-jboss-service.xml" tofile="${build.sar.dir}/META-INF/jboss-service.xml" />
+        
+        <jar jarfile="${build.sar.dir}/jmsoption.sar">
+             <fileset dir="${build.classes.dir}">
+                <include name="com/b4utrade/jmx/OptionInitializer.class" />
+                <include name="com/b4utrade/jmx/OptionInitializerMBean.class" />
+             </fileset>
+             <fileset dir="${build.sar.dir}">
+                <include name="META-INF/jboss-service.xml" />
+             </fileset>
+        </jar>
+        
+        <delete file="${build.sar.dir}/META-INF/jboss-service.xml" />
+        
+        <copy file="${basedir}/jms-optionserver-jboss-service.xml" tofile="${build.sar.dir}/META-INF/jboss-service.xml" />
+        
+		<jar jarfile="${build.sar.dir}/jmsequity.sar">
+             <fileset dir="${build.classes.dir}">
+                <include name="com/b4utrade/jmx/EquityInitializer.class" />
+                <include name="com/b4utrade/jmx/EquityInitializerMBean.class" />
+             </fileset>
+             <fileset dir="${build.sar.dir}">
+                <include name="META-INF/jboss-service.xml" />
+             </fileset>
+        </jar>
+    	
+    	<delete file="${build.sar.dir}/META-INF/jboss-service.xml" />
+    	        
+    	        <copy file="${basedir}/jms-ticker-house-jboss-service.xml" tofile="${build.sar.dir}/META-INF/jboss-service.xml" />
+    	        
+    			<jar jarfile="${build.sar.dir}/jmsTickerHouse.sar">
+    	             <fileset dir="${build.classes.dir}">
+    	                <include name="com/b4utrade/jmx/TickerHouseOptionsInitializer.class" />
+    	                <include name="com/b4utrade/jmx/TickerHouseOptionsInitializerMBean.class" />
+    	             </fileset>
+    	             <fileset dir="${build.sar.dir}">
+    	                <include name="META-INF/jboss-service.xml" />
+    	             </fileset>
+    	        </jar>
+        
+        <delete file="${build.sar.dir}/META-INF/jboss-service.xml" />
+     
+        <copy file="${basedir}/jms-futures-jboss-service.xml" tofile="${build.sar.dir}/META-INF/jboss-service.xml" />
+         
+ 		<jar jarfile="${build.sar.dir}/jmsfutures.sar">
+              <fileset dir="${build.classes.dir}">
+                 <include name="com/b4utrade/jmx/FuturesInitializer.class" />
+                 <include name="com/b4utrade/jmx/FuturesInitializerMBean.class" />
+              </fileset>
+              <fileset dir="${build.sar.dir}">
+                 <include name="META-INF/jboss-service.xml" />
+              </fileset>
+         </jar>
+ 	 <delete file="${build.sar.dir}/META-INF/jboss-service.xml" />
+         
+        <copy file="${basedir}/jms-optionserver-jboss-service.xml" tofile="${build.sar.dir}/META-INF/jboss-service.xml" />
+
+        <jar jarfile="${build.sar.dir}/jmsoptionserver.sar">
+             <fileset dir="${build.classes.dir}">
+                <include name="com/b4utrade/jmx/OptionQuoteServerInitializer.class" />
+                <include name="com/b4utrade/jmx/OptionQuoteServerInitializerMBean.class" />
+             </fileset>
+             <fileset dir="${build.sar.dir}">
+                <include name="META-INF/jboss-service.xml" />
+             </fileset>
+        </jar>
+        
+        <delete file="${build.sar.dir}/META-INF/jboss-service.xml" />
+        
+        <copy file="${basedir}/jms-alert-jboss-service.xml" tofile="${build.sar.dir}/META-INF/jboss-service.xml" />
+        
+        <jar jarfile="${build.sar.dir}/alertserver.sar">
+             <fileset dir="${build.classes.dir}">
+                <include name="com/b4utrade/jmx/AlertInitializer.class" />
+                <include name="com/b4utrade/jmx/AlertInitializerMBean.class" />
+             </fileset>
+             <fileset dir="${build.sar.dir}">
+                <include name="META-INF/jboss-service.xml" />
+             </fileset>
+        </jar>
+        
+        <copy todir="${sar.dist.dir}">
+            <fileset dir="${build.sar.dir}" includes="**/*.sar"/>
+        </copy>
+
+        <delete file="${build.sar.dir}/META-INF/jboss-service.xml" />
+        
+        <copy file="${basedir}/jms-news-jboss-service.xml" tofile="${build.sar.dir}/META-INF/jboss-service.xml" />
+        
+        <jar jarfile="${build.sar.dir}/newsserver.sar">
+             <fileset dir="${build.classes.dir}">
+                <include name="com/b4utrade/jmx/NewsInitializer.class" />
+                <include name="com/b4utrade/jmx/NewsInitializerMBean.class" />
+             </fileset>
+             <fileset dir="${build.sar.dir}">
+                <include name="META-INF/jboss-service.xml" />
+             </fileset>
+        </jar>
+        
+        <copy todir="${sar.dist.dir}">
+            <fileset dir="${build.sar.dir}" includes="**/*.sar"/>
+        </copy>
+    	
+    	 <delete file="${build.sar.dir}/META-INF/jboss-service.xml" />
+    	        
+    	        <copy file="${basedir}/jms-edgenews-jboss-service.xml" tofile="${build.sar.dir}/META-INF/jboss-service.xml" />
+    	        
+    	        <jar jarfile="${build.sar.dir}/edgenewsserver.sar">
+    	             <fileset dir="${build.classes.dir}">
+    	                <include name="com/b4utrade/jmx/EdgeNewsInitializer.class" />
+    	                <include name="com/b4utrade/jmx/EdgeNewsInitializerMBean.class" />
+    	             </fileset>
+    	             <fileset dir="${build.sar.dir}">
+    	                <include name="META-INF/jboss-service.xml" />
+    	             </fileset>
+    	        </jar>
+    	        
+    	        <copy todir="${sar.dist.dir}">
+    	            <fileset dir="${build.sar.dir}" includes="**/*.sar"/>
+    	        </copy>
+    	
+        <delete file="${build.sar.dir}/META-INF/jboss-service.xml" />
+        
+        <copy file="${basedir}/tcp-mm2-consumer-jboss-service.xml" tofile="${build.sar.dir}/META-INF/jboss-service.xml" />
+        
+        <jar jarfile="${build.sar.dir}/tcpmm2consumer.sar">
+             <fileset dir="${build.classes.dir}">
+                <include name="com/b4utrade/jmx/InitTCPMM2Consumer.class" />
+                <include name="com/b4utrade/jmx/InitTCPMM2ConsumerMBean.class" />
+             </fileset>
+             <fileset dir="${build.sar.dir}">
+                <include name="META-INF/jboss-service.xml" />
+             </fileset>
+        </jar>
+        
+        <copy todir="${sar.dist.dir}">
+            <fileset dir="${build.sar.dir}" includes="**/*.sar"/>
+        </copy>
+
+        <delete file="${build.sar.dir}/META-INF/jboss-service.xml" />
+        
+        <copy file="${basedir}/jms-tsq-jboss-service.xml" tofile="${build.sar.dir}/META-INF/jboss-service.xml" />
+        
+        <jar jarfile="${build.sar.dir}/tsqdistributor.sar">
+             <fileset dir="${build.classes.dir}">
+                <include name="com/b4utrade/jmx/TSQMessageDistributorInitializer.class" />
+                <include name="com/b4utrade/jmx/TSQMessageDistributorInitializerMBean.class" />
+             </fileset>
+             <fileset dir="${build.sar.dir}">
+                <include name="META-INF/jboss-service.xml" />
+             </fileset>
+        </jar>
+        
+        <copy todir="${sar.dist.dir}">
+            <fileset dir="${build.sar.dir}" includes="**/*.sar"/>
+        </copy>
+
+        
+    </target>   
+    
+
+</project>

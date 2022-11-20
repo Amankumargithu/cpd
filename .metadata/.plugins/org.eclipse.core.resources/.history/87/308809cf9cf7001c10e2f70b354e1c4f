@@ -1,0 +1,384 @@
+/******************************************************************************
+*
+*  JSONSnapHTTP.java
+*     HTTP snap server - JSON response
+*
+*  REVISION HISTORY:
+*     12 AUG 2014 jcs  Created (from SpryWareHTTP).
+*
+*  (c) 2011-2014 Quodd Financial
+*******************************************************************************/
+package proxy;
+
+import java.io.*;
+import java.net.*;
+import java.text.*;
+import java.util.*;
+
+
+/////////////////////////////////////////////////////////////////
+//
+//                c l a s s   _ J S O N C l i e n t
+//
+/////////////////////////////////////////////////////////////////
+class _JSONClient implements Runnable
+{
+   /////////////////
+   // Class-wide
+   /////////////////
+   private static final String KEY_SYMBOL = "tkr";
+   private static final String _CR        = "\r\n";
+   private static final String _BR        = "<br>";
+   private static final String _BRCR      = _BR + _CR;
+
+   /////////////////
+   // Instance
+   /////////////////
+   private JSONSnapHTTP     _svr;
+   private Socket           _sock;
+   private String           _dst;
+   private DataInputStream  _in;
+   private DataOutputStream _out;
+   private Thread           _thr;
+   private int              _bSz;
+   private byte[]           _buf;
+   private PrintStream      cout;
+
+   //////////////////////
+   // Constructor
+   //////////////////////
+   _JSONClient( JSONSnapHTTP svr, Socket cli ) throws IOException
+   {
+      InetSocketAddress ip;
+      String[]          kv;
+      String            pl;
+      int               i, nk;
+
+      _svr  = svr;
+      _sock = cli;
+      ip    = (InetSocketAddress)cli.getRemoteSocketAddress();
+      _dst  = ip.getAddress().getHostAddress();
+      _in   = new DataInputStream( cli.getInputStream() );
+      _out  = new DataOutputStream( cli.getOutputStream() );
+      _thr  = new Thread( this );
+      _bSz  = 16 * 1024;
+      _buf  = new byte[_bSz];
+      cout  = System.out;
+      _thr.start();
+   }
+
+   public void Stop()
+   {
+      synchronized( this ) {
+         try {
+            if ( _sock != null )
+               _sock.close();
+         } catch( IOException e ) { ; }
+         if ( _thr != null )
+            _thr.interrupt();
+         _thr = null;
+      }
+   }
+
+
+   //////////////////////
+   // Runnable Interface
+   //////////////////////
+   public void run()
+   {
+      String  msg, fmt, s;
+      boolean bRun;
+      int     len;
+
+      for ( bRun=true,fmt=null; bRun; ) {
+         try {
+            len = _in.read( _buf, 0, _bSz );
+            if ( len > 0 )
+               Parse( new String( _buf, 0, len ) );
+            else
+               bRun = false;
+         } catch( NullPointerException e ) {
+            fmt  = "[%s] READ ERROR : NullPointerException\n";
+            bRun = false;
+         } catch( IOException e ) {
+            fmt  = "[%s] READ ERROR : IOException\n";
+            bRun = false;
+         }
+      }
+      Disconnect();
+      if ( fmt != null )
+         cout.printf( fmt, Now() );
+      synchronized( this ) {
+         _sock = null;
+         _thr  = null;
+      }
+   }
+
+
+   //////////////////////
+   // Workhorse
+   //////////////////////
+   private void Parse( String url )
+   {
+      String                 get, tkr;
+      String[]               argv, kv, av, http, dmp;
+      QuoddFeed.msg.QuoddMsg qm;
+      QuoddFeed.msg.Image    img;
+      QuoddFeed.msg.Status   sts;
+      String                 rsp, js, fld, val;
+      int                    i, argc, tot, nk;
+      char                   mt, mt2;
+
+      // HTTP Hdr :  GET /?tkr=CSCO
+
+      http = url.split( "\\r?\\n" );
+      kv   = http[0].split("HTTP")[0].split( "\\?" );
+      nk   = kv.length;
+      get  = ( nk > 1 ) ? kv[1].trim() : kv[0].trim();
+      tkr  = "undefined";
+      argv = get.split( "\\&" );
+      argc = argv.length;
+cout.printf( "[%s] URL : %s\n", Now(), url );
+cout.printf( "[%s] GET : %s; %d args\n", Now(), get, argc );
+
+      // Pull ticker from Argument List
+
+      for ( i=0; i<argc; i++ ) {
+cout.printf( "%s\n", argv[i] );
+         kv = argv[i].split( "=" );
+         if ( kv.length != 2 )
+            continue; // for-i
+         kv[0] = kv[0].toLowerCase();
+         av    = kv[1].split( "," );
+         if ( kv[0].equals( KEY_SYMBOL ) )
+            tkr = kv[1].replace( "%5C", "\\" ).replace( "%20", " " );
+      }
+
+      // Hard-Coded Header
+
+      rsp  = "HTTP/1.1 200 OK" + _CR;
+      rsp += "Date: " + HttpTime() + _CR;
+      rsp += "Server: Quodd Snap Server/1.0 (Johnson)" + _CR;
+      rsp += "Connection: close" + _CR;
+      rsp += "Content-Type: text/html; charset=UTF-8" + _CR;
+      js   = "".format( "<h3> %s Not found </h3>\n", tkr );
+
+      // Query 1 ticker
+
+      qm  = _svr.uc().SyncSnap( tkr, null );
+      mt  = qm.mt();
+      mt2 = qm.mtSub();
+      switch( mt2 ) {
+         case QuoddFeed.msg.MsgTypes._mtSubIMG:
+            img = (QuoddFeed.msg.Image)qm;
+            dmp = img.Dump().split( "\n" );
+            js  = "{" + _CR;
+            js += "   \"" + tkr + "\": {" + _CR;
+            for ( i=0; i<dmp.length; i++ ) {
+               kv  = dmp[i].split( "=" );
+               if ( kv.length != 2 )
+                  continue; // for-i
+               fld = kv[0].trim();
+               val = kv[1].trim();
+               js += js.format( "      \"%s\" : ", fld );
+               js += js.format( "\"%s\",%s", val, _CR );
+            }
+            js += "   }" + _CR;
+            js += "}" + _CR;
+            break;
+         default:
+            if ( mt == QuoddFeed.msg.MsgTypes._mtDEAD ) {
+               sts = (QuoddFeed.msg.Status)qm;
+               val = sts.Text().replace( "<","" ).replace( ">","" );
+               js  = "".format( "%s DEAD : %s", tkr, val );
+            }
+            break;
+      }
+
+      // Format response; Shove it out ...
+
+      tot  = js.length();
+      rsp += rsp.format( "Content-Length : %d%s", tot, _CR );
+      rsp += _CR;
+      rsp += js;
+      try {
+         cout.printf( "[%s] %d byte response\n", Now(), rsp.length() );
+cout.printf( rsp );
+         _out.writeBytes( rsp );
+         _sock.shutdownOutput();
+      } catch( Exception e ) {
+         breakpoint();
+      }
+   }
+
+
+   //////////////////////
+   // Helpers
+   //////////////////////
+   private String HttpTime()
+   {
+      Calendar         cal;
+      SimpleDateFormat sdf;
+      String           fmt = "EEE, dd MMM yyyy HH:mm:ss z";
+
+      cal = Calendar.getInstance();
+      sdf = new SimpleDateFormat( fmt, Locale.US );
+      sdf.setTimeZone( TimeZone.getTimeZone("GMT") );
+      return sdf.format( cal.getTime() );
+   }
+
+   private void breakpoint() { ; }
+
+   private void Disconnect()
+   {
+      try {
+         if ( _sock != null ) {
+            _sock.close();
+         }
+      } catch( IOException io ) {
+         breakpoint();
+      }
+   }
+
+   private String Now()
+   {
+      return _svr.Now( _dst );
+   }
+}
+
+
+
+/////////////////////////////////////////////////////////////////
+//
+//               c l a s s   J S O N S n a p H T T P
+//
+/////////////////////////////////////////////////////////////////
+class JSONSnapHTTP implements Runnable
+{
+   ////////////////
+   // Instance
+   ////////////////
+   private int                      _port;
+   private ServerSocket             _lsn;
+   private Thread                   _thr;
+   private ArrayList<_JSONClient>   _cli;
+   private PrintStream              cout;
+   private QuoddFeed.util.UltraChan _uc;
+
+   //////////////////////
+   // Constructor
+   //////////////////////
+   JSONSnapHTTP( int port ) throws IOException
+   {
+      QuoddFeed.util.UCconfig cfg;
+
+      cfg   = new QuoddFeed.util.UCconfig();
+      _port = port;
+      _lsn  = new ServerSocket( _port );
+      _thr  = new Thread( this );
+      _cli  = new ArrayList<_JSONClient>();
+      cout  = System.out;
+      _uc   = new QuoddFeed.util.UltraChan( cfg.Hostname(),
+                                            cfg.Port(),
+                                            cfg.Username(),
+                                            cfg.Password(),
+                                            false );
+      _uc.Start();
+      _thr.start();
+   }
+
+   public void Stop()
+   {
+      int i, nc;
+
+      synchronized( this ) { 
+         _uc.Stop();
+         try {
+            if ( _lsn != null )
+               _lsn.close();
+         } catch( IOException e ) { ; }
+         if ( _thr != null )
+            _thr.interrupt();
+         _thr = null;
+      }
+      nc   = _cli.size();
+      for ( i=0; i<nc; _cli.get( i++ ).Stop() );
+   }
+
+
+   //////////////////////
+   // Access
+   //////////////////////
+   public QuoddFeed.util.UltraChan uc()
+   {
+      return _uc;
+   }
+
+   public static String Now( String dst )
+   {
+      long   t0, tid;
+      String p0, s;
+
+      tid = Thread.currentThread().getId();
+      t0  = System.currentTimeMillis();
+      p0  = QuoddFeed.msg.QuoddMsg.pDateTimeMs( t0 );
+      s   = p0;
+      if ( dst != null )
+         s += s.format( ",%04x,%s", tid, dst );
+      return s;
+   }
+
+
+   //////////////////////
+   // Runnable Interface
+   //////////////////////
+   public void run()
+   {
+      try {
+         cout.printf( "JSONSnapHTTP listening on port %d\n", _port );
+         while( true ) {
+            _cli.add( new _JSONClient( this, _lsn.accept() ) );
+         }
+      } catch( IOException e ) {
+         cout.printf( "%s\n", e.getMessage() );
+      }
+      synchronized( this ) { 
+         _lsn = null;
+         _thr = null;
+      }
+   }
+
+   /////////////////////////
+   //
+   //  main()
+   //
+   /////////////////////////
+   public static void main( String args[] )
+   {
+      int          argc, port;
+      Scanner      sc;
+      PrintStream  cout;
+      JSONSnapHTTP spry;
+
+      // Quick check
+
+      argc = args.length;
+      cout = System.out;
+      if ( ( argc > 0 ) && args[0].equals( "--version" ) ) {
+         cout.printf( "%s\n", QuoddFeed.msg.QuoddMsg.Version() );
+         return;
+      }
+      port = ( argc > 0 ) ? Integer.parseInt( args[0] ) : 12345;
+      try {
+         spry = new JSONSnapHTTP( port );
+      } catch( IOException e ) {
+         cout.printf( "Can't listen() : %s\n", e.getMessage() );
+         return;
+      }
+      sc   = new Scanner( System.in );
+      sc.nextLine();
+      cout.printf( "Shutting down ...\n" );
+      spry.Stop();
+      cout.printf( "Done!!\n" );
+   }
+}

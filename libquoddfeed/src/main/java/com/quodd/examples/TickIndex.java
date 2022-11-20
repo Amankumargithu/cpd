@@ -1,0 +1,161 @@
+/******************************************************************************
+*
+*  TickIndex.java
+*     Exercies Query commands to UltraCache
+*
+*  REVISION HISTORY:
+*      1 OCT 2012 jcs  Created.
+*
+*  (c) 2011-2012, Quodd Financial
+*******************************************************************************/
+package com.quodd.examples;
+
+import java.io.*;
+import java.util.*;
+import QuoddFeed.msg.*;
+import QuoddFeed.util.*;
+
+
+public class TickIndex extends UltraChan
+{
+   private String  _mktCat;
+   private int     _tmout;
+   private String  _arg;
+   private boolean _bConn;
+
+   //////////////////////
+   // Constructor
+   //////////////////////
+   TickIndex( String mktCat, int tmout )
+   {
+      super( UCconfig.Hostname(),
+             UCconfig.Port(), 
+             "username", 
+             "password", 
+             false );
+      _mktCat = mktCat;
+      _tmout  = tmout;
+      _arg    = "User-defined closure for Query.java";
+      _bConn  = false;
+   }
+
+
+   //////////////////////
+   // IUpdate Interface
+   //////////////////////
+   /**
+    * Called when we connect to UltraCache.  Here, we query the UltraCache.
+    */
+   public void OnConnect()
+   {
+      int        i, nt;
+      String[]   flds = {} ; // { "BID", "ASK", "STRIKE_PRICE" };
+      AssetClass ass;
+
+      System.out.printf( "CONNECT %s:%d\n", uHost(), uPort() );
+      FreeSync();
+   }
+
+   /**
+    * Called when we disconnect from UltraCache.  We do nothing here.
+    */
+   public void OnDisconnect()
+   {
+      System.out.printf( "DISCONNECT %s:%d\n", uHost(), uPort() );
+   }
+
+
+   //////////////////////
+   // Synchronous Query
+   //////////////////////
+   /**
+    * Synchronous (blocking) query MUST be done from main thread.  If we 
+    * try to do this from the UltraChan thread in OnConnect(), we lock up 
+    * since OnConnect() tries to wait for itself to receive the response 
+    * from UltraCache.  Since the thread can only do one thing at a time 
+    * - i.e., wait() or UltraChain.Drain() - it never reads from the 
+    * channel. 
+    */
+   public void WaitSync()
+   {
+      if ( !_bConn )
+         _Wait();
+   }
+
+   public void PostSync()
+   {
+      PrintStream cout = System.out;
+      BlobTable   b;
+      String      pt, pn;
+      String[]    tkrs;
+      QuoddMsg[]  res;
+      QuoddMsg    rtn;
+      Image       img;
+      long        t0, dd;
+      int         i, j, nt, sz;
+
+      // Get ticker names
+
+      t0   = System.currentTimeMillis();
+      b    = SyncGetMktCategory( _arg, _mktCat );
+      nt   = b.nRow();
+      tkrs = new String[nt];
+      for ( i=0; i<nt; tkrs[i] = b.GetCell( i++,0 ) );
+      dd   = System.currentTimeMillis() - t0;
+      cout.printf( "%d tkrs from SyncGetMktCategory() in %dmS\n", nt, dd );
+//      for ( i=0; i<nt; cout.printf( "REQ-%d f %d : %s\n", i, nt, tkrs[i++] ) );
+
+      // Dump _prcTck
+
+      t0  = System.currentTimeMillis();
+//      res = SyncMultiSnap( tkrs, null );
+      res = WaitMultiSnap( tkrs, null, _tmout ); // 10 secs
+      dd  = System.currentTimeMillis() - t0;
+      sz  = res.length;
+      cout.printf( "%d MultiSyncSnap()'s in %dmS\n", sz, dd );
+      for ( i=0; i<sz; i++ ) {
+         rtn = res[i];
+         if ( rtn == null )
+            break; // for-i
+         if ( rtn.mtSub() != _mtSubIMG )
+            continue; // for-i
+         img = (Image)rtn;
+         pt  = rtn.pTimeMs();
+         pn  = rtn.tkr();
+         cout.printf( "%s %-6s : %s\n", pt, pn, img.prcTck() );
+      }
+   }
+
+   private void FreeSync()
+   {
+      _bConn = true;
+      _Notify();
+   }
+
+
+   /////////////////////////
+   //
+   //  main()
+   //
+   /////////////////////////
+   public static void main( String args[] )
+   {
+      TickIndex cpd;
+      Scanner   sc;
+      String    mktCat;
+      int       argc, tmout;
+
+      argc   = args.length;
+      mktCat = ( argc > 0 ) ? args[0] : "N";
+      tmout  = ( argc > 1 ) ? Integer.parseInt( args[1] ) : 5000;
+      cpd = new TickIndex( mktCat, tmout );
+      cpd.Start();
+      System.out.printf( "Hit <ENTER> to terminate...\n" );
+      sc = new Scanner( System.in );
+      cpd.WaitSync();
+      cpd.PostSync();
+      System.out.printf( "Shutting down ...\n" );
+      cpd.Stop();
+      System.out.printf( "Done!!\n" );
+   }
+}
